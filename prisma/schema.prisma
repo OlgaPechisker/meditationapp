@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Treatment {
+  id          Int       @id @default(autoincrement())
+  slug        String
+  locale      String    @default("he")
+  title       String
+  subtitle    String?
+  description String
+  price       String?
+  imageUrl    String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([slug, locale])
+}
+
+model BlogPost {
+  id          Int       @id @default(autoincrement())
+  slug        String
+  locale      String    @default("he")
+  title       String
+  excerpt     String?
+  content     String
+  imageUrl    String?
+  publishedAt DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  comments    Comment[]
+
+  @@unique([slug, locale])
+}
+
+model Comment {
+  id         Int       @id @default(autoincrement())
+  postId     Int
+  post       BlogPost  @relation(fields: [postId], references: [id])
+  authorName String
+  content    String
+  isApproved Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([postId, isApproved])
+}
+
+model Lecture {
+  id          Int       @id @default(autoincrement())
+  slug        String
+  locale      String    @default("he")
+  title       String
+  description String
+  date        DateTime
+  location    String?
+  price       String?
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([slug, locale])
+}
+
+model Song {
+  id        Int      @id @default(autoincrement())
+  locale    String   @default("he")
+  title     String
+  lyrics    String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([title, locale])
+}
+
+model SiteContent {
+  id        Int      @id @default(autoincrement())
+  key       String
+  locale    String   @default("he")
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([key, locale])
+}
