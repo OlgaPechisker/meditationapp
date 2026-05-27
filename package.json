@@ -1,0 +1,16 @@
+{
+  "name": "einat-website",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm start",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx prisma db seed",
+    "db:studio": "npx prisma studio"
+  },
+  "engines": { "node": ">=20.0.0" },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
