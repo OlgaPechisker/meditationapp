@@ -1,0 +1,10 @@
+@import '../_shared-admin';
+
+.preview {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #666;
+  font-size: 0.85rem;
+}

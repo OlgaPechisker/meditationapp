@@ -1,0 +1,36 @@
+<div class="admin-section">
+  <div class="section-header">
+    <h2>תגובות ממתינות לאישור</h2>
+  </div>
+
+  @if (error()) {
+    <div class="alert-error">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="loading">טוען...</p>
+  } @else {
+    @if (comments().length === 0) {
+      <p>אין תגובות ממתינות.</p>
+    }
+
+    @for (item of comments(); track item.id) {
+      <div class="comment-card">
+        <div class="comment-meta">
+          <strong>{{ item.authorName }}</strong>
+          <span>{{ item.createdAt }}</span>
+        </div>
+        @if (item.postTitle) {
+          <div class="comment-meta">
+            <span>על הפוסט: {{ item.postTitle }}</span>
+          </div>
+        }
+        <div class="comment-content">{{ item.content }}</div>
+        <div class="comment-actions">
+          <button class="btn-sm btn-approve" (click)="approve(item)">אשר</button>
+          <button class="btn-sm btn-reject" (click)="reject(item)">דחה</button>
+        </div>
+      </div>
+    }
+  }
+</div>

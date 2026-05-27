@@ -1,0 +1,54 @@
+<div class="admin-section">
+  <div class="section-header">
+    <h2>ניהול שירים</h2>
+    <button class="btn-primary" (click)="openCreate()">+ הוסף שיר</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert-error">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="loading">טוען...</p>
+  } @else {
+    @if (showForm()) {
+      <div class="form-card">
+        <h3>{{ editing() ? 'עריכת שיר' : 'שיר חדש' }}</h3>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="form-group">
+            <label>כותרת</label>
+            <input formControlName="title" />
+          </div>
+          <div class="form-group">
+            <label>תוכן (מילים)</label>
+            <textarea formControlName="content" rows="12"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">שמור</button>
+            <button type="button" class="btn-secondary" (click)="cancel()">ביטול</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>כותרת</th>
+          <th>פעולות</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of songs(); track item.id) {
+          <tr>
+            <td>{{ item.title }}</td>
+            <td class="actions">
+              <button class="btn-sm btn-edit" (click)="openEdit(item)">ערוך</button>
+              <button class="btn-sm btn-delete" (click)="deleteItem(item)">מחק</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
