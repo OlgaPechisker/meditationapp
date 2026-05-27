@@ -1,0 +1,11 @@
+{
+  "nav": { "home": "ראשי", "treatments": "טיפולים", "blog": "בלוג", "lectures": "הרצאות", "songs": "שירים", "about": "אודות", "contact": "צור קשר" },
+  "home": { "hero_title": "עינת שומונוב", "hero_subtitle": "ריפוי, מדיטציה ושלווה פנימית", "treatments_section": "הטיפולים שלי", "blog_section": "מהבלוג", "upcoming_lectures": "הרצאות קרובות" },
+  "treatments": { "title": "טיפולים", "book_via_whatsapp": "לתיאום דרך וואטסאפ", "price": "מחיר" },
+  "blog": { "title": "בלוג", "read_more": "קרא עוד", "comments": "תגובות", "leave_comment": "השאר תגובה", "your_name": "שמך", "comment_text": "תוכן התגובה", "submit": "שלח", "comment_pending": "התגובה נשלחה ותאושר בקרוב" },
+  "lectures": { "title": "הרצאות", "date": "תאריך", "location": "מיקום", "price": "מחיר" },
+  "songs": { "title": "שירים" },
+  "about": { "title": "אודות" },
+  "contact": { "title": "צור קשר", "whatsapp": "שלח הודעה בוואטסאפ", "email": "אימייל", "phone": "טלפון" },
+  "common": { "loading": "טוען...", "error": "אירעה שגיאה", "not_found": "הדף לא נמצא", "back": "חזרה" }
+}

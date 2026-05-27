@@ -1,0 +1,21 @@
+@mixin responsive($breakpoint) {
+  @if $breakpoint == sm { @media (min-width: 640px) { @content; } }
+  @if $breakpoint == md { @media (min-width: 768px) { @content; } }
+  @if $breakpoint == lg { @media (min-width: 1024px) { @content; } }
+  @if $breakpoint == xl { @media (min-width: 1280px) { @content; } }
+}
+
+@mixin container {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--spacing-lg);
+}
+
+@mixin card {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xl);
+  transition: box-shadow 0.2s ease;
+  &:hover { box-shadow: var(--shadow-lg); }
+}
