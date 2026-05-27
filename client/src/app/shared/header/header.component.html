@@ -1,0 +1,41 @@
+<header class="header">
+  <div class="header__container">
+    <a routerLink="/" class="header__logo" (click)="closeMenu()">עינת שומונוב</a>
+
+    <nav class="header__nav-desktop">
+      <ul>
+        @for (link of navLinks; track link.path) {
+          <li>
+            <a [routerLink]="link.path" routerLinkActive="active">{{ link.label | transloco }}</a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <button
+      class="header__hamburger"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="menuOpen()"
+      aria-label="תפריט">
+      <span class="header__hamburger-line"></span>
+      <span class="header__hamburger-line"></span>
+      <span class="header__hamburger-line"></span>
+    </button>
+  </div>
+</header>
+
+@if (menuOpen()) {
+  <div class="mobile-nav" (click)="closeMenu()">
+    <nav class="mobile-nav__content" (click)="$event.stopPropagation()">
+      <ul>
+        @for (link of navLinks; track link.path) {
+          <li>
+            <a [routerLink]="link.path" routerLinkActive="active" (click)="closeMenu()">
+              {{ link.label | transloco }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
+}

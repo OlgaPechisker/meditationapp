@@ -1,8 +1,49 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { DatePipe } from '@angular/common';
+import { ApiService, PaginatedResponse } from '../../core/services/api.service';
+import { SeoService } from '../../core/services/seo.service';
+
+interface Lecture {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  price: number;
+  imageUrl: string;
+  isActive: boolean;
+  locale: string;
+}
 
 @Component({
   selector: 'app-lectures',
   standalone: true,
-  template: '<h1>Lectures</h1>',
+  imports: [TranslocoPipe, DatePipe],
+  templateUrl: './lectures.component.html',
+  styleUrl: './lectures.component.scss',
 })
-export class LecturesComponent {}
+export class LecturesComponent implements OnInit {
+  private api = inject(ApiService);
+  private seo = inject(SeoService);
+
+  lectures = signal<Lecture[]>([]);
+
+  upcoming = computed(() =>
+    this.lectures()
+      .filter(l => new Date(l.date) >= new Date())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  );
+
+  past = computed(() =>
+    this.lectures()
+      .filter(l => new Date(l.date) < new Date())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  );
+
+  ngOnInit() {
+    this.seo.updateMeta({ title: 'הרצאות', description: 'הרצאות של עינת שומונוב' });
+    this.api.get<PaginatedResponse<Lecture>>('/lectures', { locale: 'he' })
+      .subscribe(res => this.lectures.set(res.data));
+  }
+}

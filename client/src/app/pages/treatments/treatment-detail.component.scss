@@ -1,0 +1,72 @@
+@use '../../../styles/mixins' as *;
+
+.treatment-detail {
+  padding: var(--spacing-3xl) 0;
+
+  &__container {
+    @include container;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-2xl);
+
+    @include responsive(md) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  &__image {
+    height: 300px;
+    background: var(--color-bg-alt);
+    background-size: cover;
+    background-position: center;
+    border-radius: var(--radius-lg);
+
+    @include responsive(md) {
+      height: 400px;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__title {
+    font-size: var(--font-size-2xl);
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-md);
+  }
+
+  &__price {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0 0 var(--spacing-xl);
+  }
+
+  &__description {
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    line-height: 1.8;
+    margin-bottom: var(--spacing-2xl);
+    white-space: pre-line;
+  }
+
+  &__cta {
+    display: inline-block;
+    background: #25D366;
+    color: #fff;
+    padding: var(--spacing-md) var(--spacing-2xl);
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    text-align: center;
+    transition: background 0.2s;
+    align-self: flex-start;
+
+    &:hover {
+      background: #1da851;
+    }
+  }
+}

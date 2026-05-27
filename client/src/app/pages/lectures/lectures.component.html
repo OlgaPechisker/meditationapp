@@ -1,0 +1,54 @@
+<div class="lectures-page">
+  <div class="lectures-page__container">
+    <h1 class="lectures-page__title">{{ 'lectures.title' | transloco }}</h1>
+
+    @if (upcoming().length) {
+      <section class="lectures-section">
+        <h2 class="lectures-section__heading">הרצאות קרובות</h2>
+        <div class="lectures-timeline">
+          @for (lecture of upcoming(); track lecture.id) {
+            <article class="lecture-card">
+              <div class="lecture-card__date-badge">
+                {{ lecture.date | date:'dd/MM/yyyy' }}
+              </div>
+              <div class="lecture-card__body">
+                <h3 class="lecture-card__title">{{ lecture.title }}</h3>
+                <p class="lecture-card__desc">{{ lecture.description }}</p>
+                <div class="lecture-card__meta">
+                  <span>{{ 'lectures.location' | transloco }}: {{ lecture.location }}</span>
+                  <span>{{ 'lectures.price' | transloco }}: ₪{{ lecture.price }}</span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (past().length) {
+      <section class="lectures-section lectures-section--past">
+        <h2 class="lectures-section__heading">הרצאות שהתקיימו</h2>
+        <div class="lectures-timeline">
+          @for (lecture of past(); track lecture.id) {
+            <article class="lecture-card lecture-card--past">
+              <div class="lecture-card__date-badge">
+                {{ lecture.date | date:'dd/MM/yyyy' }}
+              </div>
+              <div class="lecture-card__body">
+                <h3 class="lecture-card__title">{{ lecture.title }}</h3>
+                <p class="lecture-card__desc">{{ lecture.description }}</p>
+                <div class="lecture-card__meta">
+                  <span>{{ 'lectures.location' | transloco }}: {{ lecture.location }}</span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (!upcoming().length && !past().length) {
+      <p class="lectures-page__empty">אין הרצאות כרגע</p>
+    }
+  </div>
+</div>

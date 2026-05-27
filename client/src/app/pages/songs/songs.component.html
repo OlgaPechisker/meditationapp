@@ -1,0 +1,23 @@
+<div class="songs-page">
+  <div class="songs-page__container">
+    <h1 class="songs-page__title">{{ 'songs.title' | transloco }}</h1>
+
+    @if (songs().length) {
+      <div class="songs-accordion">
+        @for (song of songs(); track song.id) {
+          <div class="song-item" [class.song-item--expanded]="expandedId() === song.id">
+            <button class="song-item__header" (click)="toggle(song.id)">
+              <span class="song-item__title">{{ song.title }}</span>
+              <span class="song-item__icon">{{ expandedId() === song.id ? '−' : '+' }}</span>
+            </button>
+            @if (expandedId() === song.id) {
+              <div class="song-item__content">
+                <div class="song-item__lyrics">{{ song.content }}</div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

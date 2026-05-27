@@ -1,0 +1,38 @@
+.about-page {
+  padding: var(--spacing-3xl) var(--spacing-lg);
+
+  &__container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  &__title {
+    font-size: var(--font-size-3xl);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  &__content {
+    line-height: 1.8;
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+
+    ::ng-deep {
+      h2, h3 {
+        color: var(--color-primary);
+        margin-top: var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
+      }
+
+      p {
+        margin-bottom: var(--spacing-md);
+      }
+
+      img {
+        max-width: 100%;
+        border-radius: var(--radius-md);
+        margin: var(--spacing-lg) 0;
+      }
+    }
+  }
+}

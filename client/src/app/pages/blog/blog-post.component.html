@@ -1,0 +1,60 @@
+<div class="blog-post">
+  @if (post(); as p) {
+    <article class="blog-post__container">
+      @if (p.imageUrl) {
+        <div class="blog-post__hero" [style.background-image]="'url(' + p.imageUrl + ')'"></div>
+      }
+      <header class="blog-post__header">
+        <h1 class="blog-post__title">{{ p.title }}</h1>
+        <time class="blog-post__date">{{ p.publishedAt | date:'dd/MM/yyyy' }}</time>
+      </header>
+
+      <div class="blog-post__content">{{ p.content }}</div>
+
+      <section class="comments">
+        <h2 class="comments__title">{{ 'blog.comments' | transloco }} ({{ p.comments.length }})</h2>
+
+        @if (p.comments.length) {
+          <div class="comments__list">
+            @for (comment of p.comments; track comment.id) {
+              <div class="comment">
+                <div class="comment__header">
+                  <strong class="comment__author">{{ comment.authorName }}</strong>
+                  <time class="comment__date">{{ comment.createdAt | date:'dd/MM/yyyy' }}</time>
+                </div>
+                <p class="comment__content">{{ comment.content }}</p>
+              </div>
+            }
+          </div>
+        }
+
+        @if (commentSubmitted()) {
+          <p class="comments__success">{{ 'blog.comment_pending' | transloco }}</p>
+        } @else {
+          <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-form">
+            <h3 class="comment-form__title">{{ 'blog.leave_comment' | transloco }}</h3>
+
+            <div class="comment-form__field">
+              <label for="authorName">{{ 'blog.your_name' | transloco }}</label>
+              <input id="authorName" formControlName="authorName" type="text" />
+            </div>
+
+            <div class="comment-form__field">
+              <label for="content">{{ 'blog.comment_text' | transloco }}</label>
+              <textarea id="content" formControlName="content" rows="4"></textarea>
+            </div>
+
+            <!-- Honeypot -->
+            <div class="comment-form__hp" aria-hidden="true">
+              <input formControlName="honeypot" type="text" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <button type="submit" class="comment-form__submit" [disabled]="commentForm.invalid || submitting()">
+              {{ 'blog.submit' | transloco }}
+            </button>
+          </form>
+        }
+      </section>
+    </article>
+  }
+</div>

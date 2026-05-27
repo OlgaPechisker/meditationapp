@@ -1,0 +1,22 @@
+<div class="contact-page">
+  <div class="contact-page__container">
+    <h1 class="contact-page__title">{{ 'contact.title' | transloco }}</h1>
+
+    <div class="contact-page__card">
+      <a [href]="whatsappLink" target="_blank" rel="noopener" class="contact-page__whatsapp-btn">
+        {{ 'contact.whatsapp' | transloco }}
+      </a>
+
+      <div class="contact-page__details">
+        <div class="contact-page__item">
+          <span class="contact-page__label">{{ 'contact.email' | transloco }}:</span>
+          <a [href]="'mailto:' + email">{{ email }}</a>
+        </div>
+        <div class="contact-page__item">
+          <span class="contact-page__label">{{ 'contact.phone' | transloco }}:</span>
+          <a [href]="'tel:' + phone">{{ phone }}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,31 @@
+<div class="blog-page">
+  <div class="blog-page__container">
+    <h1 class="blog-page__title">{{ 'blog.title' | transloco }}</h1>
+
+    @if (posts().length) {
+      <div class="blog-grid">
+        @for (post of posts(); track post.id) {
+          <article class="blog-card">
+            <div class="blog-card__image" [style.background-image]="post.imageUrl ? 'url(' + post.imageUrl + ')' : ''"></div>
+            <div class="blog-card__body">
+              <time class="blog-card__date">{{ post.publishedAt | date:'dd/MM/yyyy' }}</time>
+              <h2 class="blog-card__title">
+                <a [routerLink]="['/blog', post.slug]">{{ post.title }}</a>
+              </h2>
+              <p class="blog-card__excerpt">{{ post.excerpt }}</p>
+              <a [routerLink]="['/blog', post.slug]" class="blog-card__link">{{ 'blog.read_more' | transloco }}</a>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button (click)="prevPage()" [disabled]="currentPage() === 1" class="pagination__btn">→ הקודם</button>
+          <span class="pagination__info">{{ currentPage() }} / {{ totalPages() }}</span>
+          <button (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="pagination__btn">הבא ←</button>
+        </div>
+      }
+    }
+  </div>
+</div>
