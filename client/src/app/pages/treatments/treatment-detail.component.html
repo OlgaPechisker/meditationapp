@@ -3,13 +3,17 @@
     <div class="treatment-detail__container">
       <div class="treatment-detail__image" [style.background-image]="t.imageUrl ? 'url(' + t.imageUrl + ')' : ''"></div>
       <div class="treatment-detail__content">
-        <h1 class="treatment-detail__title">{{ t.title }}</h1>
-        <p class="treatment-detail__price">{{ 'treatments.price' | transloco }}: ₪{{ t.price }}</p>
-        <div class="treatment-detail__description">{{ t.description }}</div>
+        <h1 class="treatment-detail__title" data-testid="treatment-title">{{ t.title }}</h1>
+        <p class="treatment-detail__price" data-testid="treatment-price">{{ 'treatments.price' | transloco }}: ₪{{ t.price }}</p>
+        <div class="treatment-detail__description" data-testid="treatment-description">{{ t.description }}</div>
         <a [href]="getWhatsappLink()" target="_blank" rel="noopener" class="treatment-detail__cta">
           {{ 'treatments.book_via_whatsapp' | transloco }}
         </a>
       </div>
+    </div>
+  } @else {
+    <div data-testid="treatment-not-found">
+      <p>הטיפול לא נמצא</p>
     </div>
   }
 </div>

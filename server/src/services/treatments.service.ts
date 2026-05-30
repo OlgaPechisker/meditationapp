@@ -30,6 +30,10 @@ export async function updateTreatment(id: number, data: Partial<{
   return prisma.treatment.update({ where: { id }, data });
 }
 
+export async function deleteTreatment(id: number) {
+  return prisma.treatment.delete({ where: { id } });
+}
+
 export async function listAllTreatments(locale: string, pagination: PaginationParams) {
   const where = { locale };
   const [data, total] = await Promise.all([

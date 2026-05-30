@@ -5,19 +5,21 @@
     @if (songs().length) {
       <div class="songs-accordion">
         @for (song of songs(); track song.id) {
-          <div class="song-item" [class.song-item--expanded]="expandedId() === song.id">
-            <button class="song-item__header" (click)="toggle(song.id)">
-              <span class="song-item__title">{{ song.title }}</span>
+          <div class="song-item" [class.song-item--expanded]="expandedId() === song.id" data-testid="song-item" [attr.data-id]="song.id">
+            <button class="song-item__header" (click)="toggle(song.id)" data-testid="song-toggle-btn">
+              <span class="song-item__title" data-testid="song-title">{{ song.title }}</span>
               <span class="song-item__icon">{{ expandedId() === song.id ? '−' : '+' }}</span>
             </button>
             @if (expandedId() === song.id) {
               <div class="song-item__content">
-                <div class="song-item__lyrics">{{ song.content }}</div>
+                <div class="song-item__lyrics" data-testid="song-lyrics">{{ song.lyrics }}</div>
               </div>
             }
           </div>
         }
       </div>
+    } @else {
+      <p data-testid="no-songs-msg">אין שירים עדיין</p>
     }
   </div>
 </div>

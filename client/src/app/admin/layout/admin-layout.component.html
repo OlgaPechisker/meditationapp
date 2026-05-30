@@ -5,7 +5,7 @@
     </div>
     <nav class="sidebar-nav">
       @for (link of navLinks; track link.path) {
-        <a [routerLink]="link.path" routerLinkActive="active" class="nav-link">
+        <a [routerLink]="link.path" routerLinkActive="active" class="nav-link" [attr.data-testid]="'nav-' + link.testid">
           {{ link.label }}
         </a>
       }
@@ -15,7 +15,7 @@
   <div class="main-area">
     <header class="top-bar">
       <h1>פאנל ניהול</h1>
-      <button class="btn-logout" (click)="logout()">התנתק</button>
+      <button class="btn-logout" (click)="logout()" data-testid="logout-btn">התנתק</button>
     </header>
     <main class="content">
       <router-outlet />

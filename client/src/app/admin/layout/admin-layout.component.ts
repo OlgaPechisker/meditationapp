@@ -14,12 +14,12 @@ export class AdminLayoutComponent {
   private router = inject(Router);
 
   navLinks = [
-    { path: 'treatments', label: 'טיפולים' },
-    { path: 'blog', label: 'בלוג' },
-    { path: 'comments', label: 'תגובות' },
-    { path: 'lectures', label: 'הרצאות' },
-    { path: 'songs', label: 'שירים' },
-    { path: 'content', label: 'תוכן האתר' },
+    { path: 'treatments', label: 'טיפולים', testid: 'treatments' },
+    { path: 'blog', label: 'בלוג', testid: 'blog' },
+    { path: 'comments', label: 'תגובות', testid: 'comments' },
+    { path: 'lectures', label: 'הרצאות', testid: 'lectures' },
+    { path: 'songs', label: 'שירים', testid: 'songs' },
+    { path: 'content', label: 'תוכן האתר', testid: 'content' },
   ];
 
   logout() {

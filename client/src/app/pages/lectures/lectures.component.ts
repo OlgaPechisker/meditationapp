@@ -43,7 +43,7 @@ export class LecturesComponent implements OnInit {
 
   ngOnInit() {
     this.seo.updateMeta({ title: 'הרצאות', description: 'הרצאות של עינת שומונוב' });
-    this.api.get<PaginatedResponse<Lecture>>('/lectures', { locale: 'he' })
+    this.api.get<PaginatedResponse<Lecture>>('/lectures', { locale: 'he', limit: 100 })
       .subscribe(res => this.lectures.set(res.data));
   }
 }

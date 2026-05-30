@@ -48,4 +48,4 @@ npx ng serve
 
 ## Admin Access
 
-Navigate to `/admin/login` and enter the admin password (set via `ADMIN_PASSWORD` env var, default: `admin123`).
+Navigate to `/admin/login` and enter the admin password (set via `ADMIN_PASSWORD`, default: `admin123`, or provide `ADMIN_PASSWORD_HASH`).

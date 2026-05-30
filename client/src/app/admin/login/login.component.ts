@@ -23,7 +23,10 @@ export class LoginComponent {
   loading = signal(false);
 
   onSubmit() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.error.set('אנא הזן סיסמה');
+      return;
+    }
 
     this.loading.set(true);
     this.error.set('');

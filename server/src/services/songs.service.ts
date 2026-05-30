@@ -3,6 +3,15 @@ import { paginate, paginatedResponse, PaginationParams } from "../utils/paginati
 
 const prisma = new PrismaClient();
 
+export async function listAllSongs(locale: string, pagination: PaginationParams) {
+  const where = { locale };
+  const [data, total] = await Promise.all([
+    prisma.song.findMany({ where, orderBy: { sortOrder: "asc" }, ...paginate(pagination) }),
+    prisma.song.count({ where }),
+  ]);
+  return paginatedResponse(data, total, pagination);
+}
+
 export async function listSongs(locale: string, pagination: PaginationParams) {
   const where = { locale };
   const [data, total] = await Promise.all([

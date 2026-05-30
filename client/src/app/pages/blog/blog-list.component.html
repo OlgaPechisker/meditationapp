@@ -5,12 +5,12 @@
     @if (posts().length) {
       <div class="blog-grid">
         @for (post of posts(); track post.id) {
-          <article class="blog-card">
+          <article class="blog-card" data-testid="blog-card" [attr.data-slug]="post.slug" [routerLink]="['/blog', post.slug]" style="cursor:pointer">
             <div class="blog-card__image" [style.background-image]="post.imageUrl ? 'url(' + post.imageUrl + ')' : ''"></div>
             <div class="blog-card__body">
-              <time class="blog-card__date">{{ post.publishedAt | date:'dd/MM/yyyy' }}</time>
+              <time class="blog-card__date" data-testid="blog-card-date">{{ post.publishedAt | date:'dd/MM/yyyy' }}</time>
               <h2 class="blog-card__title">
-                <a [routerLink]="['/blog', post.slug]">{{ post.title }}</a>
+                <a [routerLink]="['/blog', post.slug]" data-testid="blog-card-title">{{ post.title }}</a>
               </h2>
               <p class="blog-card__excerpt">{{ post.excerpt }}</p>
               <a [routerLink]="['/blog', post.slug]" class="blog-card__link">{{ 'blog.read_more' | transloco }}</a>
@@ -26,6 +26,8 @@
           <button (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="pagination__btn">הבא ←</button>
         </div>
       }
+    } @else {
+      <p data-testid="no-posts-msg">אין פוסטים עדיין</p>
     }
   </div>
 </div>

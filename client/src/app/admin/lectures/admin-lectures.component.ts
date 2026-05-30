@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, PaginatedResponse } from '../../core/services/api.service';
 
 interface Lecture {
   id: string;
@@ -35,7 +35,7 @@ export class AdminLecturesComponent implements OnInit {
     description: ['', Validators.required],
     date: ['', Validators.required],
     location: ['', Validators.required],
-    price: [0, [Validators.required, Validators.min(0)]],
+    price: [0, [Validators.min(0)]],
     imageUrl: [''],
     isActive: [true],
   });
@@ -44,8 +44,8 @@ export class AdminLecturesComponent implements OnInit {
 
   loadItems() {
     this.loading.set(true);
-    this.api.get<Lecture[]>('/lectures/admin/all', { locale: 'he' }).subscribe({
-      next: (data) => { this.lectures.set(data); this.loading.set(false); },
+    this.api.get<PaginatedResponse<Lecture>>('/lectures/admin/all', { locale: 'he', limit: 100 }).subscribe({
+      next: (res) => { this.lectures.set(res.data); this.loading.set(false); },
       error: () => { this.error.set('שגיאה בטעינת הרצאות'); this.loading.set(false); },
     });
   }
@@ -58,16 +58,23 @@ export class AdminLecturesComponent implements OnInit {
 
   openEdit(item: Lecture) {
     this.editing.set(item);
-    this.form.patchValue(item);
+    this.form.patchValue({ ...item, price: item.price ?? 0 });
     this.showForm.set(true);
   }
 
   cancel() { this.showForm.set(false); }
 
   save() {
-    if (this.form.invalid) return;
-    const body = { ...this.form.value, locale: 'he' };
+    if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }
+    const formVal = this.form.value;
+    const body: Record<string, unknown> = { ...formVal, locale: 'he' };
+    if (!body['imageUrl']) delete body['imageUrl'];
     const editing = this.editing();
+
+    if (!editing) {
+      const title = String(body['title'] ?? '');
+      body['slug'] = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+    }
 
     if (editing) {
       this.api.patch(`/lectures/${editing.id}`, body).subscribe({
@@ -83,7 +90,6 @@ export class AdminLecturesComponent implements OnInit {
   }
 
   deleteItem(item: Lecture) {
-    if (!confirm(`למחוק את "${item.title}"?`)) return;
     this.api.delete(`/lectures/${item.id}`).subscribe({
       next: () => this.loadItems(),
       error: () => this.error.set('שגיאה במחיקה'),

@@ -6,6 +6,12 @@ import * as songService from "../services/songs.service.js";
 
 export const songRoutes = Router();
 
+songRoutes.get("/admin/all", requireAuth, async (req: Request, res: Response) => {
+  const pagination = paginationSchema.parse(req.query);
+  const result = await songService.listAllSongs(req.locale, pagination);
+  res.json(result);
+});
+
 songRoutes.get("/", async (req: Request, res: Response) => {
   const pagination = paginationSchema.parse(req.query);
   const result = await songService.listSongs(req.locale, pagination);

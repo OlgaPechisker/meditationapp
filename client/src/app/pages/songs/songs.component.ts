@@ -6,7 +6,7 @@ import { SeoService } from '../../core/services/seo.service';
 interface Song {
   id: number;
   title: string;
-  content: string;
+  lyrics: string;
   locale: string;
 }
 

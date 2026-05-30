@@ -18,7 +18,7 @@ export async function getLectureBySlug(slug: string, locale: string) {
 
 export async function createLecture(data: {
   slug: string; locale: string; title: string; description: string;
-  date: Date; location?: string; price?: string; imageUrl?: string;
+  date: Date; location?: string; price?: string; imageUrl?: string; isActive?: boolean;
 }) {
   return prisma.lecture.create({ data });
 }
@@ -28,6 +28,10 @@ export async function updateLecture(id: number, data: Partial<{
   price: string; imageUrl: string; isActive: boolean;
 }>) {
   return prisma.lecture.update({ where: { id }, data });
+}
+
+export async function deleteLecture(id: number) {
+  return prisma.lecture.delete({ where: { id } });
 }
 
 export async function listAllLectures(locale: string, pagination: PaginationParams) {

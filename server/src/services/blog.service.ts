@@ -4,7 +4,7 @@ import { paginate, paginatedResponse, PaginationParams } from "../utils/paginati
 const prisma = new PrismaClient();
 
 export async function listPublishedPosts(locale: string, pagination: PaginationParams) {
-  const where = { locale, publishedAt: { not: null }, deletedAt: null };
+  const where = { locale, publishedAt: { not: null, lte: new Date() }, deletedAt: null };
   const [data, total] = await Promise.all([
     prisma.blogPost.findMany({
       where, orderBy: { publishedAt: "desc" },
@@ -17,7 +17,16 @@ export async function listPublishedPosts(locale: string, pagination: PaginationP
 }
 
 export async function getPostBySlug(slug: string, locale: string) {
-  return prisma.blogPost.findFirst({ where: { slug, locale, publishedAt: { not: null }, deletedAt: null } });
+  return prisma.blogPost.findFirst({
+    where: { slug, locale, publishedAt: { not: null }, deletedAt: null },
+    include: {
+      comments: {
+        where: { isApproved: true },
+        select: { id: true, authorName: true, content: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
 }
 
 export async function createPost(data: {
@@ -38,7 +47,7 @@ export async function softDeletePost(id: number) {
 }
 
 export async function listAllPosts(locale: string, pagination: PaginationParams) {
-  const where = { locale, deletedAt: null };
+  const where = { locale };
   const [data, total] = await Promise.all([
     prisma.blogPost.findMany({ where, orderBy: { createdAt: "desc" }, ...paginate(pagination) }),
     prisma.blogPost.count({ where }),

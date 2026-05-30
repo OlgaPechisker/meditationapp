@@ -1,65 +1,65 @@
 <div class="admin-section">
   <div class="section-header">
     <h2>ניהול טיפולים</h2>
-    <button class="btn-primary" (click)="openCreate()">+ הוסף טיפול</button>
+    <button class="btn-primary" (click)="openCreate()" data-testid="add-treatment-btn">+ הוסף טיפול</button>
   </div>
 
   @if (error()) {
-    <div class="alert-error">{{ error() }}</div>
+    <div class="alert-error" data-testid="form-error">{{ error() }}</div>
   }
 
   @if (loading()) {
     <p class="loading">טוען...</p>
   } @else {
     @if (showForm()) {
-      <div class="form-card">
+      <div class="form-card" data-testid="treatment-form">
         <h3>{{ editing() ? 'עריכת טיפול' : 'טיפול חדש' }}</h3>
         <form [formGroup]="form" (ngSubmit)="save()">
           <div class="form-row">
             <div class="form-group">
               <label>Slug</label>
-              <input formControlName="slug" />
+              <input formControlName="slug" data-testid="field-slug" />
             </div>
             <div class="form-group">
               <label>כותרת</label>
-              <input formControlName="title" />
+              <input formControlName="title" data-testid="field-title" />
             </div>
           </div>
           <div class="form-group">
             <label>תיאור</label>
-            <textarea formControlName="description" rows="3"></textarea>
+            <textarea formControlName="description" rows="3" data-testid="field-description"></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>מחיר</label>
-              <input type="number" formControlName="price" />
+              <input type="number" formControlName="price" data-testid="field-price" />
             </div>
             <div class="form-group">
               <label>תמונה (URL)</label>
-              <input formControlName="imageUrl" />
+              <input formControlName="imageUrl" data-testid="field-imageUrl" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>סדר</label>
-              <input type="number" formControlName="sortOrder" />
+              <input type="number" formControlName="sortOrder" data-testid="field-sortOrder" />
             </div>
             <div class="form-group checkbox-group">
               <label>
-                <input type="checkbox" formControlName="isActive" />
+                <input type="checkbox" formControlName="isActive" data-testid="field-isActive" />
                 פעיל
               </label>
             </div>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn-primary">שמור</button>
-            <button type="button" class="btn-secondary" (click)="cancel()">ביטול</button>
+            <button type="submit" class="btn-primary" data-testid="form-save">שמור</button>
+            <button type="button" class="btn-secondary" (click)="cancel()" data-testid="form-cancel">ביטול</button>
           </div>
         </form>
       </div>
     }
 
-    <table class="data-table">
+    <table class="data-table" data-testid="treatments-table">
       <thead>
         <tr>
           <th>כותרת</th>
@@ -71,18 +71,18 @@
       </thead>
       <tbody>
         @for (item of treatments(); track item.id) {
-          <tr>
-            <td>{{ item.title }}</td>
+          <tr data-testid="treatment-row" [attr.data-slug]="item.slug">
+            <td data-testid="treatment-title">{{ item.title }}</td>
             <td>{{ item.slug }}</td>
             <td>₪{{ item.price }}</td>
             <td>
-              <span class="badge" [class.active]="item.isActive" [class.inactive]="!item.isActive">
+              <span class="badge" [class.active]="item.isActive" [class.inactive]="!item.isActive" data-testid="treatment-status">
                 {{ item.isActive ? 'פעיל' : 'לא פעיל' }}
               </span>
             </td>
             <td class="actions">
-              <button class="btn-sm btn-edit" (click)="openEdit(item)">ערוך</button>
-              <button class="btn-sm btn-delete" (click)="deleteItem(item)">מחק</button>
+              <button class="btn-sm btn-edit" (click)="openEdit(item)" data-testid="treatment-edit-btn">ערוך</button>
+              <button class="btn-sm btn-delete" (click)="deleteItem(item)" data-testid="treatment-delete-btn">מחק</button>
             </td>
           </tr>
         }

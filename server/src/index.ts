@@ -1,9 +1,10 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { config } from "./config.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { localeMiddleware } from "./middleware/locale.js";
+import { requireAuth } from "./middleware/auth.js";
+import { clearRateLimitStore } from "./middleware/rate-limit.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { treatmentRoutes } from "./routes/treatments.routes.js";
 import { blogRoutes } from "./routes/blog.routes.js";
@@ -29,6 +30,13 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/lectures", lectureRoutes);
 app.use("/api/songs", songRoutes);
 app.use("/api/content", contentRoutes);
+
+if (process.env.NODE_ENV !== "production") {
+  app.delete("/api/_test/rate-limit", requireAuth, (_req, res) => {
+    clearRateLimitStore();
+    res.status(204).end();
+  });
+}
 
 app.use(errorHandler);
 

@@ -1,12 +1,14 @@
 <header class="header">
   <div class="header__container">
-    <a routerLink="/" class="header__logo" (click)="closeMenu()">עינת שומונוב</a>
+    <a routerLink="/" class="header__logo" (click)="closeMenu()" data-testid="nav-home">
+      <img src="/assets/logo.jpeg" alt="עינת שומונוב" class="header__logo-img" />
+    </a>
 
     <nav class="header__nav-desktop">
       <ul>
         @for (link of navLinks; track link.path) {
           <li>
-            <a [routerLink]="link.path" routerLinkActive="active">{{ link.label | transloco }}</a>
+            <a [routerLink]="link.path" routerLinkActive="active" [attr.data-testid]="'nav-' + link.testid">{{ link.label | transloco }}</a>
           </li>
         }
       </ul>
@@ -16,7 +18,8 @@
       class="header__hamburger"
       (click)="toggleMenu()"
       [attr.aria-expanded]="menuOpen()"
-      aria-label="תפריט">
+      aria-label="תפריט"
+      data-testid="hamburger-btn">
       <span class="header__hamburger-line"></span>
       <span class="header__hamburger-line"></span>
       <span class="header__hamburger-line"></span>
@@ -30,7 +33,7 @@
       <ul>
         @for (link of navLinks; track link.path) {
           <li>
-            <a [routerLink]="link.path" routerLinkActive="active" (click)="closeMenu()">
+            <a [routerLink]="link.path" routerLinkActive="active" (click)="closeMenu()" [attr.data-testid]="'mobile-nav-' + link.testid">
               {{ link.label | transloco }}
             </a>
           </li>

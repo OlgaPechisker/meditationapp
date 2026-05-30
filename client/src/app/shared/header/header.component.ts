@@ -21,11 +21,11 @@ export class HeaderComponent {
   }
 
   navLinks = [
-    { path: '/treatments', label: 'nav.treatments' },
-    { path: '/blog', label: 'nav.blog' },
-    { path: '/lectures', label: 'nav.lectures' },
-    { path: '/songs', label: 'nav.songs' },
-    { path: '/about', label: 'nav.about' },
-    { path: '/contact', label: 'nav.contact' },
+    { path: '/treatments', label: 'nav.treatments', testid: 'treatments' },
+    { path: '/blog', label: 'nav.blog', testid: 'blog' },
+    { path: '/lectures', label: 'nav.lectures', testid: 'lectures' },
+    { path: '/songs', label: 'nav.songs', testid: 'songs' },
+    { path: '/about', label: 'nav.about', testid: 'about' },
+    { path: '/contact', label: 'nav.contact', testid: 'contact' },
   ];
 }

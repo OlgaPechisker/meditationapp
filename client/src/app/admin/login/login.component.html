@@ -3,7 +3,7 @@
     <h1>כניסת מנהל</h1>
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
-        <div class="error-msg">{{ error() }}</div>
+        <div class="error-msg" data-testid="login-error">{{ error() }}</div>
       }
       <div class="form-group">
         <label for="password">סיסמה</label>
@@ -12,9 +12,10 @@
           type="password"
           formControlName="password"
           autocomplete="current-password"
+          data-testid="password-input"
         />
       </div>
-      <button type="submit" [disabled]="loading()">
+      <button type="submit" [disabled]="loading()" data-testid="login-submit">
         @if (loading()) { טוען... } @else { כניסה }
       </button>
     </form>

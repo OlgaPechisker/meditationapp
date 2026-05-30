@@ -2,7 +2,10 @@
   <div class="hero__container">
     <h1 class="hero__title">{{ 'home.hero_title' | transloco }}</h1>
     <p class="hero__subtitle">{{ 'home.hero_subtitle' | transloco }}</p>
-    <a routerLink="/treatments" class="hero__cta">{{ 'nav.treatments' | transloco }}</a>
+    <div class="hero__actions">
+      <a routerLink="/treatments" class="hero__cta hero__cta--primary">{{ 'nav.treatments' | transloco }}</a>
+      <a routerLink="/about" class="hero__cta hero__cta--secondary">{{ 'nav.about' | transloco }}</a>
+    </div>
   </div>
 </section>
 

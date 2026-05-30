@@ -1,9 +1,16 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
+import { paginationSchema } from "../utils/pagination.js";
 import * as contentService from "../services/content.service.js";
 
 export const contentRoutes = Router();
+
+contentRoutes.get("/admin/all", requireAuth, async (req: Request, res: Response) => {
+  const pagination = paginationSchema.parse(req.query);
+  const result = await contentService.getAllContentPaginated(req.locale, pagination);
+  res.json(result);
+});
 
 contentRoutes.get("/", async (req: Request, res: Response) => {
   const result = await contentService.getAllContent(req.locale);

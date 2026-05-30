@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { SlicePipe } from '@angular/common';
 import { ApiService, PaginatedResponse } from '../../core/services/api.service';
@@ -27,6 +28,7 @@ interface Treatment {
 })
 export class TreatmentListComponent implements OnInit {
   private api = inject(ApiService);
+  private route = inject(ActivatedRoute);
   private whatsapp = inject(WhatsappService);
   private seo = inject(SeoService);
 
@@ -34,7 +36,8 @@ export class TreatmentListComponent implements OnInit {
 
   ngOnInit() {
     this.seo.updateMeta({ title: 'טיפולים', description: 'טיפולים של עינת שומונוב' });
-    this.api.get<PaginatedResponse<Treatment>>('/treatments', { locale: 'he' })
+    const locale = this.route.snapshot.queryParamMap.get('locale') ?? 'he';
+    this.api.get<PaginatedResponse<Treatment>>('/treatments', { locale, limit: 100 })
       .subscribe(res => this.treatments.set(res.data));
   }
 

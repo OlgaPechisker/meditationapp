@@ -5,14 +5,14 @@
     @if (treatments().length) {
       <div class="treatments-grid">
         @for (treatment of treatments(); track treatment.id) {
-          <article class="treatment-card">
+          <article class="treatment-card" data-testid="treatment-card" [attr.data-slug]="treatment.slug" [routerLink]="['/treatments', treatment.slug]" style="cursor:pointer">
             <div class="treatment-card__image" [style.background-image]="treatment.imageUrl ? 'url(' + treatment.imageUrl + ')' : ''"></div>
             <div class="treatment-card__body">
               <h2 class="treatment-card__title">
-                <a [routerLink]="['/treatments', treatment.slug]">{{ treatment.title }}</a>
+                <a [routerLink]="['/treatments', treatment.slug]" data-testid="treatment-card-title">{{ treatment.title }}</a>
               </h2>
               <p class="treatment-card__desc">{{ treatment.description | slice:0:120 }}...</p>
-              <p class="treatment-card__price">{{ 'treatments.price' | transloco }}: ₪{{ treatment.price }}</p>
+              <p class="treatment-card__price" data-testid="treatment-card-price">{{ 'treatments.price' | transloco }}: ₪{{ treatment.price }}</p>
               <div class="treatment-card__actions">
                 <a [routerLink]="['/treatments', treatment.slug]" class="btn btn--outline">קרא עוד</a>
                 <a [href]="getWhatsappLink(treatment.title)" target="_blank" rel="noopener" class="btn btn--whatsapp">
@@ -23,6 +23,8 @@
           </article>
         }
       </div>
+    } @else {
+      <p data-testid="no-treatments-msg">אין טיפולים זמינים כרגע</p>
     }
   </div>
 </div>

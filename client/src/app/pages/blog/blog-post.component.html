@@ -5,56 +5,62 @@
         <div class="blog-post__hero" [style.background-image]="'url(' + p.imageUrl + ')'"></div>
       }
       <header class="blog-post__header">
-        <h1 class="blog-post__title">{{ p.title }}</h1>
-        <time class="blog-post__date">{{ p.publishedAt | date:'dd/MM/yyyy' }}</time>
+        <h1 class="blog-post__title" data-testid="post-title">{{ p.title }}</h1>
+        <time class="blog-post__date" data-testid="post-date">{{ p.publishedAt | date:'dd/MM/yyyy' }}</time>
       </header>
 
-      <div class="blog-post__content">{{ p.content }}</div>
+      <div class="blog-post__content" data-testid="post-content">{{ p.content }}</div>
 
       <section class="comments">
         <h2 class="comments__title">{{ 'blog.comments' | transloco }} ({{ p.comments.length }})</h2>
 
         @if (p.comments.length) {
-          <div class="comments__list">
+          <div class="comments__list" data-testid="comments-list">
             @for (comment of p.comments; track comment.id) {
-              <div class="comment">
+              <div class="comment" data-testid="comment-item">
                 <div class="comment__header">
-                  <strong class="comment__author">{{ comment.authorName }}</strong>
+                  <strong class="comment__author" data-testid="comment-author-name">{{ comment.authorName }}</strong>
                   <time class="comment__date">{{ comment.createdAt | date:'dd/MM/yyyy' }}</time>
                 </div>
-                <p class="comment__content">{{ comment.content }}</p>
+                <p class="comment__content" data-testid="comment-text">{{ comment.content }}</p>
               </div>
             }
           </div>
+        } @else {
+          <p data-testid="no-comments-msg">אין תגובות עדיין</p>
         }
 
         @if (commentSubmitted()) {
-          <p class="comments__success">{{ 'blog.comment_pending' | transloco }}</p>
+          <p class="comments__success" data-testid="comment-success">{{ 'blog.comment_pending' | transloco }}</p>
         } @else {
           <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-form">
             <h3 class="comment-form__title">{{ 'blog.leave_comment' | transloco }}</h3>
 
             <div class="comment-form__field">
               <label for="authorName">{{ 'blog.your_name' | transloco }}</label>
-              <input id="authorName" formControlName="authorName" type="text" />
+              <input id="authorName" formControlName="authorName" type="text" data-testid="author-name-input" />
             </div>
 
             <div class="comment-form__field">
               <label for="content">{{ 'blog.comment_text' | transloco }}</label>
-              <textarea id="content" formControlName="content" rows="4"></textarea>
+              <textarea id="content" formControlName="content" rows="4" data-testid="comment-content-input"></textarea>
             </div>
 
             <!-- Honeypot -->
             <div class="comment-form__hp" aria-hidden="true">
-              <input formControlName="honeypot" type="text" tabindex="-1" autocomplete="off" />
+              <input formControlName="honeypot" type="text" tabindex="-1" autocomplete="off" data-testid="honeypot-input" />
             </div>
 
-            <button type="submit" class="comment-form__submit" [disabled]="commentForm.invalid || submitting()">
+            <button type="submit" class="comment-form__submit" [disabled]="submitting()" data-testid="comment-submit">
               {{ 'blog.submit' | transloco }}
             </button>
           </form>
         }
       </section>
     </article>
+  } @else {
+    <div data-testid="post-not-found">
+      <p>הפוסט לא נמצא</p>
+    </div>
   }
 </div>

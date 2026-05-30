@@ -1,51 +1,55 @@
 <div class="admin-section">
   <div class="section-header">
     <h2>ניהול בלוג</h2>
-    <button class="btn-primary" (click)="openCreate()">+ פוסט חדש</button>
+    <button class="btn-primary" (click)="openCreate()" data-testid="add-post-btn">+ פוסט חדש</button>
   </div>
 
   @if (error()) {
-    <div class="alert-error">{{ error() }}</div>
+    <div class="alert-error" data-testid="form-error">{{ error() }}</div>
   }
 
   @if (loading()) {
     <p class="loading">טוען...</p>
   } @else {
     @if (showForm()) {
-      <div class="form-card">
+      <div class="form-card" data-testid="post-form">
         <h3>{{ editing() ? 'עריכת פוסט' : 'פוסט חדש' }}</h3>
         <form [formGroup]="form" (ngSubmit)="save()">
           <div class="form-row">
             <div class="form-group">
               <label>Slug</label>
-              <input formControlName="slug" />
+              <input formControlName="slug" data-testid="field-slug" />
             </div>
             <div class="form-group">
               <label>כותרת</label>
-              <input formControlName="title" />
+              <input formControlName="title" data-testid="field-title" />
             </div>
           </div>
           <div class="form-group">
             <label>תקציר</label>
-            <textarea formControlName="excerpt" rows="2"></textarea>
+            <textarea formControlName="excerpt" rows="2" data-testid="field-excerpt"></textarea>
           </div>
           <div class="form-group">
             <label>תוכן</label>
-            <textarea formControlName="content" rows="8"></textarea>
+            <textarea formControlName="content" rows="8" data-testid="field-content"></textarea>
           </div>
           <div class="form-group">
             <label>תמונה (URL)</label>
-            <input formControlName="imageUrl" />
+            <input formControlName="imageUrl" data-testid="field-imageUrl" />
+          </div>
+          <div class="form-group">
+            <label>תאריך פרסום</label>
+            <input type="datetime-local" formControlName="publishedAt" data-testid="field-publishedAt" />
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn-primary">שמור</button>
-            <button type="button" class="btn-secondary" (click)="cancel()">ביטול</button>
+            <button type="submit" class="btn-primary" data-testid="form-save">שמור</button>
+            <button type="button" class="btn-secondary" (click)="cancel()" data-testid="form-cancel">ביטול</button>
           </div>
         </form>
       </div>
     }
 
-    <table class="data-table">
+    <table class="data-table" data-testid="posts-table">
       <thead>
         <tr>
           <th>כותרת</th>
@@ -56,13 +60,13 @@
       </thead>
       <tbody>
         @for (item of posts(); track item.id) {
-          <tr>
-            <td>{{ item.title }}</td>
+          <tr data-testid="post-row" [attr.data-slug]="item.slug">
+            <td data-testid="post-title">{{ item.title }}</td>
             <td>{{ item.slug }}</td>
             <td>{{ item.publishedAt ?? '—' }}</td>
             <td class="actions">
-              <button class="btn-sm btn-edit" (click)="openEdit(item)">ערוך</button>
-              <button class="btn-sm btn-delete" (click)="deleteItem(item)">מחק</button>
+              <button class="btn-sm btn-edit" (click)="openEdit(item)" data-testid="post-edit-btn">ערוך</button>
+              <button class="btn-sm btn-delete" (click)="deleteItem(item)" data-testid="post-delete-btn">מחק</button>
             </td>
           </tr>
         }

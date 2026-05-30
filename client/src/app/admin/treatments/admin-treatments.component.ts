@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, PaginatedResponse } from '../../core/services/api.service';
 
 interface Treatment {
   id: string;
@@ -34,7 +34,7 @@ export class AdminTreatmentsComponent implements OnInit {
     slug: ['', Validators.required],
     title: ['', Validators.required],
     description: ['', Validators.required],
-    price: [0, [Validators.required, Validators.min(0)]],
+    price: [0, [Validators.min(0)]],
     imageUrl: [''],
     sortOrder: [0],
     isActive: [true],
@@ -46,8 +46,8 @@ export class AdminTreatmentsComponent implements OnInit {
 
   loadItems() {
     this.loading.set(true);
-    this.api.get<Treatment[]>('/treatments/admin/all', { locale: 'he' }).subscribe({
-      next: (data) => { this.treatments.set(data); this.loading.set(false); },
+    this.api.get<PaginatedResponse<Treatment>>('/treatments/admin/all', { locale: 'he', limit: 100 }).subscribe({
+      next: (res) => { this.treatments.set(res.data); this.loading.set(false); },
       error: () => { this.error.set('שגיאה בטעינת טיפולים'); this.loading.set(false); },
     });
   }
@@ -60,7 +60,7 @@ export class AdminTreatmentsComponent implements OnInit {
 
   openEdit(item: Treatment) {
     this.editing.set(item);
-    this.form.patchValue(item);
+    this.form.patchValue({ ...item, price: item.price ?? 0 });
     this.showForm.set(true);
   }
 
@@ -69,8 +69,10 @@ export class AdminTreatmentsComponent implements OnInit {
   }
 
   save() {
-    if (this.form.invalid) return;
-    const body = { ...this.form.value, locale: 'he' };
+    if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }
+    const formVal = this.form.value;
+    const body: Record<string, unknown> = { ...formVal, locale: 'he' };
+    if (!body['imageUrl']) delete body['imageUrl'];
     const editing = this.editing();
 
     if (editing) {
@@ -87,7 +89,6 @@ export class AdminTreatmentsComponent implements OnInit {
   }
 
   deleteItem(item: Treatment) {
-    if (!confirm(`למחוק את "${item.title}"?`)) return;
     this.api.delete(`/treatments/${item.id}`).subscribe({
       next: () => this.loadItems(),
       error: () => this.error.set('שגיאה במחיקה'),

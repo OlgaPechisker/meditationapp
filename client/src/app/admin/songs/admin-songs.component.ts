@@ -1,11 +1,11 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, PaginatedResponse } from '../../core/services/api.service';
 
 interface Song {
   id: string;
   title: string;
-  content: string;
+  lyrics: string;
 }
 
 @Component({
@@ -27,22 +27,22 @@ export class AdminSongsComponent implements OnInit {
 
   form = this.fb.group({
     title: ['', Validators.required],
-    content: ['', Validators.required],
+    lyrics: ['', Validators.required],
   });
 
   ngOnInit() { this.loadItems(); }
 
   loadItems() {
     this.loading.set(true);
-    this.api.get<Song[]>('/songs/admin/all', { locale: 'he' }).subscribe({
-      next: (data) => { this.songs.set(data); this.loading.set(false); },
+    this.api.get<PaginatedResponse<Song>>('/songs/admin/all', { locale: 'he', limit: 100 }).subscribe({
+      next: (res) => { this.songs.set(res.data); this.loading.set(false); },
       error: () => { this.error.set('שגיאה בטעינת שירים'); this.loading.set(false); },
     });
   }
 
   openCreate() {
     this.editing.set(null);
-    this.form.reset({ title: '', content: '' });
+    this.form.reset({ title: '', lyrics: '' });
     this.showForm.set(true);
   }
 
@@ -55,7 +55,7 @@ export class AdminSongsComponent implements OnInit {
   cancel() { this.showForm.set(false); }
 
   save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }
     const body = { ...this.form.value, locale: 'he' };
     const editing = this.editing();
 
@@ -73,7 +73,6 @@ export class AdminSongsComponent implements OnInit {
   }
 
   deleteItem(item: Song) {
-    if (!confirm(`למחוק את "${item.title}"?`)) return;
     this.api.delete(`/songs/${item.id}`).subscribe({
       next: () => this.loadItems(),
       error: () => this.error.set('שגיאה במחיקה'),

@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, PaginatedResponse } from '../../core/services/api.service';
 
 interface ContentItem {
   id: string;
@@ -34,8 +34,8 @@ export class AdminContentComponent implements OnInit {
 
   loadItems() {
     this.loading.set(true);
-    this.api.get<ContentItem[]>('/content/admin/all', { locale: 'he' }).subscribe({
-      next: (data) => { this.items.set(data); this.loading.set(false); },
+    this.api.get<PaginatedResponse<ContentItem>>('/content/admin/all', { locale: 'he', limit: 100 }).subscribe({
+      next: (res) => { this.items.set(res.data); this.loading.set(false); },
       error: () => { this.error.set('שגיאה בטעינת תוכן'); this.loading.set(false); },
     });
   }
@@ -55,20 +55,13 @@ export class AdminContentComponent implements OnInit {
   cancel() { this.showForm.set(false); }
 
   save() {
-    if (this.form.invalid) return;
-    const body = { ...this.form.value, locale: 'he' };
+    if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }
     const editing = this.editing();
-
-    if (editing) {
-      this.api.patch(`/content/${editing.id}`, body).subscribe({
-        next: () => { this.showForm.set(false); this.loadItems(); },
-        error: () => this.error.set('שגיאה בעדכון'),
-      });
-    } else {
-      this.api.post('/content', body).subscribe({
-        next: () => { this.showForm.set(false); this.loadItems(); },
-        error: () => this.error.set('שגיאה ביצירה'),
-      });
-    }
+    const key = editing ? editing.key : this.form.value.key!;
+    const body = { key, value: this.form.value.value!, locale: 'he' };
+    this.api.put('/content', body).subscribe({
+      next: () => { this.showForm.set(false); this.loadItems(); },
+      error: () => this.error.set('שגיאה בשמירה'),
+    });
   }
 }

@@ -19,14 +19,28 @@ const createCommentSchema = z.object({
   postId: z.number().int().positive(),
   authorName: z.string().min(1).max(100),
   content: z.string().min(1).max(2000),
-  honeypot: z.string().max(0).optional(),
+  honeypot: z.string().optional(),
 });
 
-commentRoutes.post("/", rateLimit(3, 15 * 60 * 1000), async (req: Request, res: Response) => {
+commentRoutes.post("/",
+  (req: Request, res: Response, next) => {
+    if (req.body?.honeypot) { res.status(201).json({ message: "Comment submitted" }); return; }
+    next();
+  },
+  rateLimit(3, 15 * 60 * 1000),
+  async (req: Request, res: Response) => {
+    const parsed = createCommentSchema.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+    const { honeypot: _hp, ...data } = parsed.data;
+    const comment = await commentService.createComment(data);
+    res.status(201).json(comment);
+  }
+);
+
+commentRoutes.post("/admin/create", requireAuth, async (req: Request, res: Response) => {
   const parsed = createCommentSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
   const { honeypot, ...data } = parsed.data;
-  // If honeypot has content, silently accept but don't save
   if (honeypot && honeypot.length > 0) { res.status(201).json({ message: "Comment submitted" }); return; }
   const comment = await commentService.createComment(data);
   res.status(201).json(comment);

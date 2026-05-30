@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, PaginatedResponse } from '../../core/services/api.service';
 
 interface BlogPost {
   id: string;
@@ -32,24 +32,25 @@ export class AdminBlogComponent implements OnInit {
   form = this.fb.group({
     slug: ['', Validators.required],
     title: ['', Validators.required],
-    excerpt: ['', Validators.required],
+    excerpt: [''],
     content: ['', Validators.required],
     imageUrl: [''],
+    publishedAt: [''],
   });
 
   ngOnInit() { this.loadItems(); }
 
   loadItems() {
     this.loading.set(true);
-    this.api.get<BlogPost[]>('/blog/admin/all', { locale: 'he' }).subscribe({
-      next: (data) => { this.posts.set(data); this.loading.set(false); },
+    this.api.get<PaginatedResponse<BlogPost>>('/blog/admin/all', { locale: 'he' }).subscribe({
+      next: (res) => { this.posts.set(res.data); this.loading.set(false); },
       error: () => { this.error.set('שגיאה בטעינת פוסטים'); this.loading.set(false); },
     });
   }
 
   openCreate() {
     this.editing.set(null);
-    this.form.reset({ slug: '', title: '', excerpt: '', content: '', imageUrl: '' });
+    this.form.reset({ slug: '', title: '', excerpt: '', content: '', imageUrl: '', publishedAt: '' });
     this.showForm.set(true);
   }
 
@@ -62,8 +63,13 @@ export class AdminBlogComponent implements OnInit {
   cancel() { this.showForm.set(false); }
 
   save() {
-    if (this.form.invalid) return;
-    const body = { ...this.form.value, locale: 'he' };
+    if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }
+    const { publishedAt, imageUrl, ...rest } = this.form.value;
+    const body: Record<string, unknown> = { ...rest, locale: 'he' };
+    if (imageUrl) body['imageUrl'] = imageUrl;
+    if (publishedAt) {
+      body['publishedAt'] = new Date(publishedAt).toISOString();
+    }
     const editing = this.editing();
 
     if (editing) {
@@ -80,7 +86,6 @@ export class AdminBlogComponent implements OnInit {
   }
 
   deleteItem(item: BlogPost) {
-    if (!confirm(`למחוק את "${item.title}"?`)) return;
     this.api.delete(`/blog/${item.id}`).subscribe({
       next: () => this.loadItems(),
       error: () => this.error.set('שגיאה במחיקה'),

@@ -1,37 +1,37 @@
 <div class="admin-section">
   <div class="section-header">
     <h2>ניהול תוכן האתר</h2>
-    <button class="btn-primary" (click)="openCreate()">+ הוסף תוכן</button>
+    <button class="btn-primary" (click)="openCreate()" data-testid="add-content-btn">+ הוסף תוכן</button>
   </div>
 
   @if (error()) {
-    <div class="alert-error">{{ error() }}</div>
+    <div class="alert-error" data-testid="form-error">{{ error() }}</div>
   }
 
   @if (loading()) {
     <p class="loading">טוען...</p>
   } @else {
     @if (showForm()) {
-      <div class="form-card">
+      <div class="form-card" data-testid="content-form">
         <h3>{{ editing() ? 'עריכת תוכן' : 'תוכן חדש' }}</h3>
         <form [formGroup]="form" (ngSubmit)="save()">
           <div class="form-group">
             <label>מפתח (key)</label>
-            <input formControlName="key" [attr.readonly]="editing() ? true : null" />
+            <input formControlName="key" [attr.readonly]="editing() ? true : null" data-testid="field-key" />
           </div>
           <div class="form-group">
             <label>תוכן (HTML)</label>
-            <textarea formControlName="value" rows="10"></textarea>
+            <textarea formControlName="value" rows="10" data-testid="field-value"></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn-primary">שמור</button>
-            <button type="button" class="btn-secondary" (click)="cancel()">ביטול</button>
+            <button type="submit" class="btn-primary" data-testid="form-save">שמור</button>
+            <button type="button" class="btn-secondary" (click)="cancel()" data-testid="form-cancel">ביטול</button>
           </div>
         </form>
       </div>
     }
 
-    <table class="data-table">
+    <table class="data-table" data-testid="content-table">
       <thead>
         <tr>
           <th>מפתח</th>
@@ -41,11 +41,11 @@
       </thead>
       <tbody>
         @for (item of items(); track item.id) {
-          <tr>
-            <td>{{ item.key }}</td>
+          <tr data-testid="content-row" [attr.data-key]="item.key">
+            <td data-testid="content-key">{{ item.key }}</td>
             <td class="preview">{{ item.value.substring(0, 80) }}...</td>
             <td class="actions">
-              <button class="btn-sm btn-edit" (click)="openEdit(item)">ערוך</button>
+              <button class="btn-sm btn-edit" (click)="openEdit(item)" data-testid="content-edit-btn">ערוך</button>
             </td>
           </tr>
         }
