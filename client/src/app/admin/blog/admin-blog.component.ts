@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService, PaginatedResponse } from '../../core/services/api.service';
+import { ImageUploadComponent } from '../_shared/image-upload/image-upload.component';
 
 interface BlogPost {
   id: string;
@@ -15,7 +16,7 @@ interface BlogPost {
 @Component({
   selector: 'app-admin-blog',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ImageUploadComponent],
   templateUrl: './admin-blog.component.html',
   styleUrl: './admin-blog.component.scss',
 })
@@ -61,6 +62,10 @@ export class AdminBlogComponent implements OnInit {
   }
 
   cancel() { this.showForm.set(false); }
+
+  onImageUrlChange(url: string | null): void {
+    this.form.patchValue({ imageUrl: url ?? '' });
+  }
 
   save() {
     if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }

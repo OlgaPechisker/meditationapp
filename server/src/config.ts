@@ -14,6 +14,10 @@ const envSchema = z.object({
   ADMIN_PASSWORD_HASH: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
   PORT: z.coerce.number().default(3000),
+  STORAGE_PROVIDER: z.enum(["local"]).default("local"),
+  UPLOAD_DIR: z.string().default("./uploads"),
+  MAX_FILE_SIZE_MB: z.coerce.number().default(5),
+  BASE_URL: z.string().default("http://localhost:3000"),
 }).superRefine((env, ctx) => {
   if (!env.ADMIN_PASSWORD_HASH && !env.ADMIN_PASSWORD) {
     ctx.addIssue({
@@ -33,4 +37,11 @@ export const config = {
     parsedEnv.ADMIN_PASSWORD_HASH ??
     bcrypt.hashSync(parsedEnv.ADMIN_PASSWORD as string, 10),
   PORT: parsedEnv.PORT,
+};
+
+export const uploadConfig = {
+  STORAGE_PROVIDER: parsedEnv.STORAGE_PROVIDER,
+  UPLOAD_DIR: parsedEnv.UPLOAD_DIR,
+  MAX_FILE_SIZE_MB: parsedEnv.MAX_FILE_SIZE_MB,
+  BASE_URL: parsedEnv.BASE_URL,
 };

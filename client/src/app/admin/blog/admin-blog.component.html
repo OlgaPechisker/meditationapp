@@ -34,8 +34,12 @@
             <textarea formControlName="content" rows="8" data-testid="field-content"></textarea>
           </div>
           <div class="form-group">
-            <label>תמונה (URL)</label>
-            <input formControlName="imageUrl" data-testid="field-imageUrl" />
+            <app-image-upload
+              label="תמונה"
+              [imageUrl]="form.value.imageUrl"
+              (imageUrlChange)="onImageUrlChange($event)"
+              data-testid="field-imageUrl"
+            ></app-image-upload>
           </div>
           <div class="form-group">
             <label>תאריך פרסום</label>

@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService, PaginatedResponse } from '../../core/services/api.service';
+import { ImageUploadComponent } from '../_shared/image-upload/image-upload.component';
 
 interface Lecture {
   id: string;
@@ -16,7 +17,7 @@ interface Lecture {
 @Component({
   selector: 'app-admin-lectures',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ImageUploadComponent],
   templateUrl: './admin-lectures.component.html',
   styleUrl: './admin-lectures.component.scss',
 })
@@ -63,6 +64,10 @@ export class AdminLecturesComponent implements OnInit {
   }
 
   cancel() { this.showForm.set(false); }
+
+  onImageUrlChange(url: string | null): void {
+    this.form.patchValue({ imageUrl: url ?? '' });
+  }
 
   save() {
     if (this.form.invalid) { this.error.set('אנא מלא את כל השדות הנדרשים'); return; }

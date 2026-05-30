@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService, PaginatedResponse } from '../../core/services/api.service';
+import { ImageUploadComponent } from '../_shared/image-upload/image-upload.component';
 
 interface Treatment {
   id: string;
@@ -16,7 +17,7 @@ interface Treatment {
 @Component({
   selector: 'app-admin-treatments',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ImageUploadComponent],
   templateUrl: './admin-treatments.component.html',
   styleUrl: './admin-treatments.component.scss',
 })
@@ -66,6 +67,10 @@ export class AdminTreatmentsComponent implements OnInit {
 
   cancel() {
     this.showForm.set(false);
+  }
+
+  onImageUrlChange(url: string | null): void {
+    this.form.patchValue({ imageUrl: url ?? '' });
   }
 
   save() {

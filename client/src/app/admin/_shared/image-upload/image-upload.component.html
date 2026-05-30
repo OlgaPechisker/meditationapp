@@ -1,0 +1,31 @@
+<div class="image-upload">
+  <label class="upload-label">{{ label() }}</label>
+
+  @if (imageUrl()) {
+    <div class="preview">
+      <img [src]="imageUrl()!" alt="תצוגה מקדימה" class="preview-img" />
+      <button type="button" class="btn-remove" (click)="removeImage()" title="הסר תמונה">✕</button>
+    </div>
+  }
+
+  <div class="upload-controls">
+    <label class="btn-upload" [class.disabled]="uploading()">
+      @if (uploading()) {
+        <span class="spinner"></span> מעלה...
+      } @else {
+        📁 {{ imageUrl() ? 'החלף תמונה' : 'בחר תמונה' }}
+      }
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        [disabled]="uploading()"
+        (change)="onFileSelected($event)"
+        hidden
+      />
+    </label>
+  </div>
+
+  @if (uploadError()) {
+    <p class="upload-error">{{ uploadError() }}</p>
+  }
+</div>

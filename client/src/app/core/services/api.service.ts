@@ -35,6 +35,10 @@ export class ApiService {
     return this.http.put<T>(`${this.baseUrl}${path}`, body);
   }
 
+  upload<T>(path: string, formData: FormData): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${path}`, formData);
+  }
+
   delete(path: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}${path}`);
   }
