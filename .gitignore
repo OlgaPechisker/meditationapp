@@ -5,3 +5,4 @@ dist/
 .angular/
 coverage/
 .env.local
+server/uploads/
