@@ -23,11 +23,12 @@ export class SongsComponent implements OnInit {
 
   songs = signal<Song[]>([]);
   expandedId = signal<number | null>(null);
+  loaded = signal(false);
 
   ngOnInit() {
     this.seo.updateMeta({ title: 'שירים', description: 'שירים של עינת שומונוב' });
     this.api.get<PaginatedResponse<Song>>('/songs', { locale: 'he' })
-      .subscribe(res => this.songs.set(res.data));
+      .subscribe(res => { this.songs.set(res.data); this.loaded.set(true); });
   }
 
   toggle(id: number) {

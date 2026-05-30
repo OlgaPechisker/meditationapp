@@ -1,5 +1,6 @@
 .lectures-page {
   padding: var(--spacing-3xl) var(--spacing-lg);
+  min-height: 60vh;
 
   &__container {
     max-width: var(--max-width);

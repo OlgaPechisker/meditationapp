@@ -59,6 +59,7 @@
 
 .section {
   padding: var(--spacing-3xl) 0;
+  min-height: 40vh;
 
   &--alt {
     background: var(--color-bg-alt);

@@ -28,6 +28,7 @@ export class LecturesComponent implements OnInit {
   private seo = inject(SeoService);
 
   lectures = signal<Lecture[]>([]);
+  loaded = signal(false);
 
   upcoming = computed(() =>
     this.lectures()
@@ -44,6 +45,6 @@ export class LecturesComponent implements OnInit {
   ngOnInit() {
     this.seo.updateMeta({ title: 'הרצאות', description: 'הרצאות של עינת שומונוב' });
     this.api.get<PaginatedResponse<Lecture>>('/lectures', { locale: 'he', limit: 100 })
-      .subscribe(res => this.lectures.set(res.data));
+      .subscribe(res => { this.lectures.set(res.data); this.loaded.set(true); });
   }
 }

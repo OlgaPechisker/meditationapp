@@ -47,7 +47,7 @@
       </section>
     }
 
-    @if (!upcoming().length && !past().length) {
+    @if (!upcoming().length && !past().length && loaded()) {
       <p class="lectures-page__empty" data-testid="no-lectures-msg">אין הרצאות כרגע</p>
     }
   </div>

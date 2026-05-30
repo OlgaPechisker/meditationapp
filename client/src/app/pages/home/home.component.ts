@@ -54,6 +54,7 @@ export class HomeComponent implements OnInit {
   treatments = signal<Treatment[]>([]);
   blogPosts = signal<BlogPost[]>([]);
   lectures = signal<Lecture[]>([]);
+  lecturesLoaded = signal(false);
 
   ngOnInit() {
     this.seo.updateMeta({ title: 'עינת שומונוב', description: 'ריפוי, מדיטציה ושלווה פנימית' });
@@ -65,6 +66,6 @@ export class HomeComponent implements OnInit {
       .subscribe(res => this.blogPosts.set(res.data));
 
     this.api.get<PaginatedResponse<Lecture>>('/lectures', { locale: 'he' })
-      .subscribe(res => this.lectures.set(res.data.slice(0, 3)));
+      .subscribe(res => { this.lectures.set(res.data.slice(0, 3)); this.lecturesLoaded.set(true); });
   }
 }

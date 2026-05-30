@@ -30,6 +30,7 @@ export class BlogListComponent implements OnInit {
   posts = signal<BlogPost[]>([]);
   currentPage = signal(1);
   totalPages = signal(1);
+  loaded = signal(false);
   private limit = 10;
 
   ngOnInit() {
@@ -45,6 +46,7 @@ export class BlogListComponent implements OnInit {
     }).subscribe(res => {
       this.posts.set(res.data);
       this.totalPages.set(Math.ceil(res.meta.total / this.limit));
+      this.loaded.set(true);
     });
   }
 

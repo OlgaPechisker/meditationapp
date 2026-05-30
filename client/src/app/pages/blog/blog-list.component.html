@@ -26,7 +26,7 @@
           <button (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="pagination__btn">הבא ←</button>
         </div>
       }
-    } @else {
+    } @else if (loaded()) {
       <p data-testid="no-posts-msg">אין פוסטים עדיין</p>
     }
   </div>

@@ -33,12 +33,13 @@ export class TreatmentListComponent implements OnInit {
   private seo = inject(SeoService);
 
   treatments = signal<Treatment[]>([]);
+  loaded = signal(false);
 
   ngOnInit() {
     this.seo.updateMeta({ title: 'טיפולים', description: 'טיפולים של עינת שומונוב' });
     const locale = this.route.snapshot.queryParamMap.get('locale') ?? 'he';
     this.api.get<PaginatedResponse<Treatment>>('/treatments', { locale, limit: 100 })
-      .subscribe(res => this.treatments.set(res.data));
+      .subscribe(res => { this.treatments.set(res.data); this.loaded.set(true); });
   }
 
   getWhatsappLink(title: string): string {
