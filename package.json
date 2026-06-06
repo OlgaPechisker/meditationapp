@@ -6,6 +6,8 @@
     "server"
   ],
   "scripts": {
+    "build": "cd server && npm run build && npx prisma generate --schema=../prisma/schema.prisma",
+    "start": "npx prisma migrate deploy --schema=prisma/schema.prisma && node server/dist/index.js",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm start",
     "db:migrate": "npx prisma migrate dev",
