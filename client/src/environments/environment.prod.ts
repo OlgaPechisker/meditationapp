@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: '/api',
+  apiUrl: 'https://meditationapp-production-0319.up.railway.app/api',
 };
