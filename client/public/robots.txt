@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://einat-shomonov.co.il/sitemap.xml

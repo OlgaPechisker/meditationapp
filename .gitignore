@@ -1,8 +1,9 @@
 node_modules/
 dist/
 .env
+**/.env
 *.log
-.angular/
 coverage/
 .env.local
 server/uploads/
+package-lock.json

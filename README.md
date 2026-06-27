@@ -1,51 +1,84 @@
-# Einat Shomonov Website
+# Einat Shomonov Website — Server
 
-Professional website for Einat Shomonov – meditation, healing & wellness practitioner.
+REST API backend for the Einat Shomonov meditation, healing & wellness practitioner website.
+
+> **Frontend (Angular):** [Einat-client](https://github.com/OlgaPechisker/meditationapp-client)
 
 ## Tech Stack
 
-- **Frontend:** Angular 19 with SSR
-- **Backend:** Node.js + Express 5 + Prisma ORM
-- **Database:** PostgreSQL
-- **i18n:** Transloco (Hebrew default, English ready)
+- **Runtime:** Node.js 20+
+- **Framework:** Express 5
+- **ORM:** Prisma
+- **Database:** PostgreSQL 16
+- **Auth:** JWT (single admin password)
+- **File storage:** Local (dev) — S3/Azure ready
+
+## Project Structure
+
+```
+├── server/          # Express API source
+│   ├── src/         # Application code
+│   ├── prisma/      # Database schema & migrations
+│   └── tests/       # Unit / integration tests
+├── e2e/             # Playwright end-to-end tests (API + UI)
+├── docs/            # Deployment plans & design specs
+└── docker-compose.yml  # Local PostgreSQL
+```
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 20+
-- PostgreSQL (or Docker)
+- PostgreSQL 16 (or Docker)
 
-### Database
+### 1. Start the database
 ```bash
 docker-compose up -d
+```
+
+### 2. Install & migrate
+```bash
+cd server
+npm install
 npx prisma migrate dev
 npx prisma db seed
 ```
 
-### Server
+### 3. Run the dev server
 ```bash
-cd server
-npm install
 npm run dev
+# API available at http://localhost:3000
 ```
 
-### Client
+## Environment Variables
+
+Copy `.env.example` to `.env` inside `server/` and adjust:
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://einat:einat@localhost:5432/einat_dev` | Postgres connection string |
+| `JWT_SECRET` | — | Secret for signing admin JWTs |
+| `ADMIN_PASSWORD` | `admin123` | Admin login password |
+| `PORT` | `3000` | HTTP port |
+| `STORAGE_PROVIDER` | `local` | `local` \| `s3` \| `azure` |
+| `BASE_URL` | `http://localhost:3000` | Used to build public image URLs |
+
+## E2E Tests
+
+End-to-end tests live in `e2e/` and cover both the API and the Angular UI.
+They require **both** the server and the [frontend](https://github.com/OlgaPechisker/meditationapp-client) to be running.
+
 ```bash
-cd client
-npm install
-npx ng serve
-```
+# Copy and fill in e2e environment
+cp .env.test.example e2e/.env
 
-## Project Structure
+# Install Playwright
+npm run e2e:install
 
-```
-├── client/          # Angular 19 SSR frontend
-├── server/          # Express API backend
-├── prisma/          # Database schema & migrations
-├── docs/            # Design specs & plans
-└── docker-compose.yml
+# Run tests
+npm run e2e
 ```
 
 ## Admin Access
 
-Navigate to `/admin/login` and enter the admin password (set via `ADMIN_PASSWORD`, default: `admin123`, or provide `ADMIN_PASSWORD_HASH`).
+Navigate to `/admin/login` in the frontend and enter the admin password (set via `ADMIN_PASSWORD`, default: `admin123`, or provide `ADMIN_PASSWORD_HASH`).
