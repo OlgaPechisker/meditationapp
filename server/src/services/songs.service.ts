@@ -21,11 +21,11 @@ export async function listSongs(locale: string, pagination: PaginationParams) {
   return paginatedResponse(data, total, pagination);
 }
 
-export async function createSong(data: { locale: string; title: string; lyrics: string; sortOrder?: number }) {
+export async function createSong(data: { locale: string; imageUrl: string; sortOrder?: number }) {
   return prisma.song.create({ data });
 }
 
-export async function updateSong(id: number, data: Partial<{ title: string; lyrics: string; sortOrder: number }>) {
+export async function updateSong(id: number, data: Partial<{ imageUrl: string; sortOrder: number }>) {
   return prisma.song.update({ where: { id }, data });
 }
 

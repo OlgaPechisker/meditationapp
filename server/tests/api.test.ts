@@ -58,6 +58,8 @@ describe("Songs API", () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toBeInstanceOf(Array);
     expect(res.body.data.length).toBeGreaterThan(0);
+    expect(res.body.data[0]).toHaveProperty("imageUrl");
+    expect(res.body.data[0]).toHaveProperty("sortOrder");
   });
 });
 

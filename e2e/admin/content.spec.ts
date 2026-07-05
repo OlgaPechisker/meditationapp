@@ -3,117 +3,77 @@ import { getAdminToken, upsertContent } from '../fixtures/factory';
 
 adminTest.describe('Admin Content', () => {
   let token = '';
-  const keysToCleanup: Array<{ key: string; locale: string }> = [];
 
   adminTest.beforeEach(async ({ request }) => {
     token = await getAdminToken(request);
-    keysToCleanup.length = 0;
   });
 
-  adminTest.afterEach(async ({ request }) => {
-    // Clean up by setting test keys to an empty string value
-    for (const { key, locale } of keysToCleanup) {
-      await upsertContent(request, token, key, '', locale).catch(() => {});
-    }
-  });
-
-  adminTest('ACNT-P1: /admin/content lists content keys', async ({ page, request }) => {
-    const key = `acnt_p1_key_${Date.now()}`;
-    const value = 'ACNT-P1 test value';
-    await upsertContent(request, token, key, value);
-    keysToCleanup.push({ key, locale: 'he' });
-
+  adminTest('ACNT-P1: /admin/content shows About and Contact sections pre-populated', async ({
+    page,
+  }) => {
     await page.goto('/admin/content');
 
-    await expect(
-      page.locator(`[data-testid="content-row"][data-key="${key}"]`),
-    ).toBeVisible();
-    await expect(
-      page
-        .locator(`[data-testid="content-row"][data-key="${key}"]`)
-        .locator('[data-testid="content-key"]'),
-    ).toContainText(key);
+    await expect(page.locator('[data-testid="about-section"]')).toBeVisible();
+    await expect(page.locator('[data-testid="contact-section"]')).toBeVisible();
+
+    // Fields are pre-populated (not empty) from seed data
+    await expect(page.locator('[data-testid="field-about-title"]')).not.toHaveValue('');
+    await expect(page.locator('[data-testid="field-contact-phone"]')).not.toHaveValue('');
+    await expect(page.locator('[data-testid="field-contact-email"]')).not.toHaveValue('');
   });
 
-  adminTest(
-    'ACNT-P2: Update a content value → new value saved (verified via edit form reopen)',
-    async ({ page, request }) => {
-      const key = `acnt_p2_key_${Date.now()}`;
-      await upsertContent(request, token, key, 'initial value');
-      keysToCleanup.push({ key, locale: 'he' });
-
-      const newValue = `ACNT-P2 updated value ${Date.now()}`;
-
-      await page.goto('/admin/content');
-
-      const row = page.locator(`[data-testid="content-row"][data-key="${key}"]`);
-      await expect(row).toBeVisible();
-      await row.locator('[data-testid="content-edit-btn"]').click();
-      await expect(page.locator('[data-testid="content-form"]')).toBeVisible();
-
-      await page.locator('[data-testid="field-value"]').fill(newValue);
-      await page.locator('[data-testid="form-save"]').click();
-
-      // Row still visible after save (success)
-      await expect(
-        page.locator(`[data-testid="content-row"][data-key="${key}"]`),
-      ).toBeVisible();
-
-      // Reopen edit form and verify the new value was persisted
-      await page
-        .locator(`[data-testid="content-row"][data-key="${key}"]`)
-        .locator('[data-testid="content-edit-btn"]')
-        .click();
-      await expect(page.locator('[data-testid="content-form"]')).toBeVisible();
-      await expect(page.locator('[data-testid="field-value"]')).toHaveValue(newValue);
-
-      // Close form
-      await page.locator('[data-testid="form-cancel"]').click();
-    },
-  );
-
-  adminTest(
-    'ACNT-P3: Upsert creates new key if it does not exist → appears in table',
-    async ({ page }) => {
-      const uniqueKey = `acnt_p3_test_key_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      keysToCleanup.push({ key: uniqueKey, locale: 'he' });
-
-      await page.goto('/admin/content');
-
-      await adminTest.step('open form', async () => {
-        await page.locator('[data-testid="add-content-btn"]').click();
-        await expect(page.locator('[data-testid="content-form"]')).toBeVisible();
-      });
-
-      await page.locator('[data-testid="field-key"]').fill(uniqueKey);
-      await page.locator('[data-testid="field-value"]').fill('ACNT-P3 new content value');
-      await page.locator('[data-testid="form-save"]').click();
-
-      await expect(
-        page.locator(`[data-testid="content-row"][data-key="${uniqueKey}"]`),
-      ).toBeVisible();
-    },
-  );
-
-  adminTest('ACNT-N1: Update content with empty value → validation error', async ({
+  adminTest('ACNT-P2: Editing about title saves and persists on reload', async ({
     page,
     request,
   }) => {
-    const key = `acnt_n1_key_${Date.now()}`;
-    await upsertContent(request, token, key, 'some value');
-    keysToCleanup.push({ key, locale: 'he' });
+    const newTitle = `כותרת בדיקה ${Date.now()}`;
 
     await page.goto('/admin/content');
+    await expect(page.locator('[data-testid="about-section"]')).toBeVisible();
 
-    const row = page.locator(`[data-testid="content-row"][data-key="${key}"]`);
-    await expect(row).toBeVisible();
-    await row.locator('[data-testid="content-edit-btn"]').click();
-    await expect(page.locator('[data-testid="content-form"]')).toBeVisible();
+    await page.locator('[data-testid="field-about-title"]').fill(newTitle);
+    await page.locator('[data-testid="save-about"]').click();
+    await expect(page.locator('[data-testid="about-success"]')).toBeVisible();
 
-    // Clear the value field
-    await page.locator('[data-testid="field-value"]').fill('');
-    await page.locator('[data-testid="form-save"]').click();
+    // Reload and verify the value persisted
+    await page.goto('/admin/content');
+    await expect(page.locator('[data-testid="field-about-title"]')).toHaveValue(newTitle);
 
-    await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
+    // Restore original value
+    await upsertContent(request, token, 'about_title', 'אודות');
+  });
+
+  adminTest('ACNT-P3: Editing contact phone saves and persists on reload', async ({
+    page,
+    request,
+  }) => {
+    const newPhone = `050-${Date.now().toString().slice(-7)}`;
+
+    await page.goto('/admin/content');
+    await expect(page.locator('[data-testid="contact-section"]')).toBeVisible();
+
+    await page.locator('[data-testid="field-contact-phone"]').fill(newPhone);
+    await page.locator('[data-testid="save-contact"]').click();
+    await expect(page.locator('[data-testid="contact-success"]')).toBeVisible();
+
+    // Reload and verify the value persisted
+    await page.goto('/admin/content');
+    await expect(page.locator('[data-testid="field-contact-phone"]')).toHaveValue(newPhone);
+
+    // Restore original value
+    await upsertContent(request, token, 'contact_phone', '+972501234567');
+  });
+
+  adminTest('ACNT-N1: Saving about section with empty title → validation prevents save', async ({
+    page,
+  }) => {
+    await page.goto('/admin/content');
+    await expect(page.locator('[data-testid="about-section"]')).toBeVisible();
+
+    await page.locator('[data-testid="field-about-title"]').fill('');
+    await page.locator('[data-testid="save-about"]').click();
+
+    // Success indicator must NOT appear — form is invalid
+    await expect(page.locator('[data-testid="about-success"]')).not.toBeVisible();
   });
 });

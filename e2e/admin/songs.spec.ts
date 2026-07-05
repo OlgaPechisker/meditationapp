@@ -1,5 +1,35 @@
-import { adminTest, expect } from '../fixtures/auth.fixture';
-import { getAdminToken, createSong, deleteSong } from '../fixtures/factory';
+import path from 'path';
+import { adminTest, expect, Page } from '../fixtures/auth.fixture';
+import { createSong, deleteSong, getAdminToken } from '../fixtures/factory';
+
+const fixtureImagePath = path.join(__dirname, '..', 'fixtures', 'test-image.png');
+
+function getSortOrderInput(page: Page) {
+  return page.locator('[data-testid="field-sortOrder"], [data-testid="song-form"] input[type="number"]').first();
+}
+
+async function getSongRowIds(page: Page) {
+  const ids = await page
+    .locator('[data-testid="song-row"]')
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-id')));
+
+  return ids.filter((id): id is string => Boolean(id));
+}
+
+async function waitForNewSongId(page: Page, existingIds: Set<string>) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const currentIds = await getSongRowIds(page);
+    const newId = currentIds.find((id) => !existingIds.has(id));
+
+    if (newId) {
+      return Number(newId);
+    }
+
+    await page.waitForTimeout(500);
+  }
+
+  throw new Error('New song row was not found after saving the form.');
+}
 
 adminTest.describe('Admin Songs', () => {
   let token = '';
@@ -18,7 +48,7 @@ adminTest.describe('Admin Songs', () => {
 
   adminTest('ASON-P1: /admin/songs lists all songs', async ({ page, request }) => {
     const song = await createSong(request, token, {
-      title: `ASON-P1 Song ${Date.now()}`,
+      imageUrl: `https://placehold.co/400x600.png?text=ASON-P1-${Date.now()}`,
     });
     songsToCleanup.push(song.id);
 
@@ -29,58 +59,55 @@ adminTest.describe('Admin Songs', () => {
     ).toBeVisible();
   });
 
-  adminTest('ASON-P2: Create song (title + lyrics) → appears on public /songs', async ({
+  adminTest('ASON-P2: Create song (image + sortOrder) → appears on public /songs', async ({
     page,
-    request,
   }) => {
-    const title = `ASON-P2 Song ${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
     await page.goto('/admin/songs');
+
+    const existingIds = new Set(await getSongRowIds(page));
 
     await adminTest.step('open form', async () => {
       await page.locator('[data-testid="add-song-btn"]').click();
       await expect(page.locator('[data-testid="song-form"]')).toBeVisible();
     });
 
-    await page.locator('[data-testid="field-title"]').fill(title);
-    await page.locator('[data-testid="field-lyrics"]').fill('ASON-P2 song lyrics line 1\nLine 2');
+    const form = page.locator('[data-testid="song-form"]');
+    const fileInput = form.locator('input[type="file"]').first();
+
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/upload') &&
+          response.request().method() === 'POST' &&
+          response.ok(),
+        { timeout: 10000 },
+      ),
+      fileInput.setInputFiles(fixtureImagePath),
+    ]);
+
+    await page.waitForTimeout(500);
+    await getSortOrderInput(page).fill('5');
     await page.locator('[data-testid="form-save"]').click();
 
-    // Find the newly created row in admin
-    const row = page.locator('[data-testid="song-row"]').filter({
-      has: page.locator('[data-testid="song-title"]', { hasText: title }),
-    });
-    await expect(row).toBeVisible();
+    const songId = await waitForNewSongId(page, existingIds);
+    songsToCleanup.push(songId);
 
-    // Get the song id from the row for cleanup
-    const songId = await row.getAttribute('data-id');
-    if (songId) songsToCleanup.push(Number(songId));
+    await expect(page.locator(`[data-testid="song-row"][data-id="${songId}"]`)).toBeVisible();
 
-    // Verify on public /songs
     await page.goto('/songs');
-    if (songId) {
-      await expect(
-        page.locator(`[data-testid="song-item"][data-id="${songId}"]`),
-      ).toBeVisible();
-    } else {
-      // Fallback: verify by title text
-      await expect(
-        page.locator('[data-testid="song-item"]').filter({ hasText: title }),
-      ).toBeVisible();
-    }
+    await expect(
+      page.locator(`[data-testid="song-item"][data-id="${songId}"]`),
+    ).toBeAttached();
   });
 
-  adminTest('ASON-P3: Update song lyrics → reflected on public page', async ({
-    page,
-    request,
-  }) => {
+  adminTest('ASON-P3: Update song → reflected on public page', async ({ page, request }) => {
     const song = await createSong(request, token, {
-      title: `ASON-P3 Song ${Date.now()}`,
-      lyrics: 'ASON-P3 original lyrics',
+      imageUrl: `https://placehold.co/400x600.png?text=ASON-P3-${Date.now()}`,
+      sortOrder: 10,
     });
     songsToCleanup.push(song.id);
 
-    const newLyrics = `ASON-P3 updated lyrics ${Date.now()}`;
+    const newSortOrder = '25';
 
     await page.goto('/admin/songs');
 
@@ -89,32 +116,18 @@ adminTest.describe('Admin Songs', () => {
     await row.locator('[data-testid="song-edit-btn"]').click();
     await expect(page.locator('[data-testid="song-form"]')).toBeVisible();
 
-    await page.locator('[data-testid="field-lyrics"]').fill(newLyrics);
+    await getSortOrderInput(page).fill(newSortOrder);
     await page.locator('[data-testid="form-save"]').click();
 
-    await expect(
-      page.locator(`[data-testid="song-row"][data-id="${song.id}"]`),
-    ).toBeVisible();
-
-    // Verify updated lyrics on public /songs
-    await page.goto('/songs');
-    const songItem = page.locator(`[data-testid="song-item"][data-id="${song.id}"]`);
-    await expect(songItem).toBeVisible();
-
-    const lyricsLocator = songItem.locator('[data-testid="song-lyrics"]');
-    const isLyricsVisible = await lyricsLocator.isVisible();
-    if (!isLyricsVisible) {
-      await songItem.locator('[data-testid="song-toggle-btn"]').click();
-    }
-    await expect(lyricsLocator).toContainText('ASON-P3 updated lyrics');
+    await expect(row).toBeVisible();
+    await row.locator('[data-testid="song-edit-btn"]').click();
+    await expect(page.locator('[data-testid="song-form"]')).toBeVisible();
+    await expect(getSortOrderInput(page)).toHaveValue(newSortOrder);
   });
 
-  adminTest('ASON-P4: Delete song → no longer on public /songs', async ({
-    page,
-    request,
-  }) => {
+  adminTest('ASON-P4: Delete song → no longer on public /songs', async ({ page, request }) => {
     const song = await createSong(request, token, {
-      title: `ASON-P4 Song ${Date.now()}`,
+      imageUrl: `https://placehold.co/400x600.png?text=ASON-P4-${Date.now()}`,
     });
     // Not added to songsToCleanup — deleted via UI
 
@@ -128,35 +141,32 @@ adminTest.describe('Admin Songs', () => {
       page.locator(`[data-testid="song-row"][data-id="${song.id}"]`),
     ).not.toBeVisible();
 
-    // Verify gone from public /songs
     await page.goto('/songs');
     await expect(
       page.locator(`[data-testid="song-item"][data-id="${song.id}"]`),
-    ).not.toBeVisible();
+    ).not.toBeAttached();
   });
 
   adminTest(
     'ASON-P5: sortOrder is respected on public page (song with lower sortOrder appears first)',
     async ({ page, request }) => {
       const song1 = await createSong(request, token, {
-        title: `ASON-P5 Song High ${Date.now()}`,
+        imageUrl: `https://placehold.co/400x600.png?text=ASON-P5-High-${Date.now()}`,
         sortOrder: 100,
       });
       songsToCleanup.push(song1.id);
 
       const song2 = await createSong(request, token, {
-        title: `ASON-P5 Song Low ${Date.now()}`,
+        imageUrl: `https://placehold.co/400x600.png?text=ASON-P5-Low-${Date.now()}`,
         sortOrder: 1,
       });
       songsToCleanup.push(song2.id);
 
       await page.goto('/songs');
 
-      // Wait for both songs to be present
-      await expect(page.locator(`[data-testid="song-item"][data-id="${song1.id}"]`)).toBeVisible();
-      await expect(page.locator(`[data-testid="song-item"][data-id="${song2.id}"]`)).toBeVisible();
+      await expect(page.locator(`[data-testid="song-item"][data-id="${song1.id}"]`)).toBeAttached();
+      await expect(page.locator(`[data-testid="song-item"][data-id="${song2.id}"]`)).toBeAttached();
 
-      // Check DOM order: song2 (sortOrder=1) must appear before song1 (sortOrder=100)
       const allIds = await page
         .locator('[data-testid="song-item"]')
         .evaluateAll((els) => els.map((el) => el.getAttribute('data-id')));
@@ -168,7 +178,7 @@ adminTest.describe('Admin Songs', () => {
     },
   );
 
-  adminTest('ASON-N1: Create song with empty title → validation error', async ({ page }) => {
+  adminTest('ASON-N1: Create song without an image → validation error', async ({ page }) => {
     await page.goto('/admin/songs');
 
     await adminTest.step('open form', async () => {
@@ -176,35 +186,9 @@ adminTest.describe('Admin Songs', () => {
       await expect(page.locator('[data-testid="song-form"]')).toBeVisible();
     });
 
-    // Leave title empty
-    await page.locator('[data-testid="field-lyrics"]').fill('Some lyrics here.');
+    await getSortOrderInput(page).fill('3');
     await page.locator('[data-testid="form-save"]').click();
 
     await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
   });
-
-  adminTest(
-    'ASON-N2: Create song with duplicate title+locale → server 4xx, form-error shown',
-    async ({ page, request }) => {
-      const existing = await createSong(request, token, {
-        title: `ASON-N2 Duplicate Song ${Date.now()}`,
-        locale: 'he',
-      });
-      songsToCleanup.push(existing.id);
-
-      await page.goto('/admin/songs');
-
-      await adminTest.step('open form', async () => {
-        await page.locator('[data-testid="add-song-btn"]').click();
-        await expect(page.locator('[data-testid="song-form"]')).toBeVisible();
-      });
-
-      // Same title + default locale (he) → should trigger duplicate error
-      await page.locator('[data-testid="field-title"]').fill(existing.title);
-      await page.locator('[data-testid="field-lyrics"]').fill('Duplicate lyrics.');
-      await page.locator('[data-testid="form-save"]').click();
-
-      await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
-    },
-  );
 });

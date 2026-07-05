@@ -64,8 +64,7 @@ async function main() {
   await prisma.song.create({
     data: {
       locale: "he",
-      title: "שיר לנשמה",
-      lyrics: "מילים זורמות כמו מים\nנושאות אותי למקומות גבוהים\nהנשמה שרה את שירה\nואני מקשיבה.",
+      imageUrl: "https://placehold.co/400x600.png?text=Song+1",
       sortOrder: 1,
     },
   });
@@ -74,9 +73,19 @@ async function main() {
   await prisma.siteContent.createMany({
     data: [
       {
+        key: "about_title",
+        locale: "he",
+        value: "אודות",
+      },
+      {
         key: "about",
         locale: "he",
         value: "עינת שומונוב - מטפלת ומדריכת מדיטציה. מלווה אנשים בדרכם לריפוי ושלווה פנימית כבר למעלה מעשור. הגישה שלי משלבת טכניקות ריפוי מסורתיות עם כלים מודרניים.",
+      },
+      {
+        key: "about_image",
+        locale: "he",
+        value: "/assets/about.png",
       },
       {
         key: "contact_phone",

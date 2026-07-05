@@ -245,17 +245,16 @@ export async function createSong(
   request: APIRequestContext,
   token: string,
   data: {
-    title?: string;
-    lyrics?: string;
+    imageUrl?: string;
     sortOrder?: number;
     locale?: string;
   } = {}
 ) {
-  const title = data.title ?? `Test Song ${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const res = await request.post(apiUrl('/api/songs'), {
     data: {
-      title,
-      lyrics: data.lyrics ?? 'Test song lyrics line 1\nTest song lyrics line 2',
+      imageUrl:
+        data.imageUrl ??
+        `https://placehold.co/400x600.png?text=Song-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       sortOrder: data.sortOrder,
       locale: data.locale ?? 'he',
     },

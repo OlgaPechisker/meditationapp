@@ -15,7 +15,7 @@ test.describe('Security', () => {
       { method: 'POST', path: '/api/treatments', body: { slug: 'x', title: 'x', locale: 'he' } },
       { method: 'POST', path: '/api/blog',        body: { slug: 'x', title: 'x', content: 'x', locale: 'he' } },
       { method: 'POST', path: '/api/lectures',    body: { title: 'x', date: new Date().toISOString(), locale: 'he' } },
-      { method: 'POST', path: '/api/songs',       body: { title: 'x', lyrics: 'x', locale: 'he' } },
+      { method: 'POST', path: '/api/songs',       body: { imageUrl: 'https://example.com/song.png', locale: 'he' } },
       { method: 'PUT',  path: '/api/content',     body: { key: 'x', value: 'x', locale: 'he' } },
     ];
 
