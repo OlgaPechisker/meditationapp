@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { paginate, paginatedResponse, PaginationParams } from "../utils/pagination.js";
-
-const prisma = new PrismaClient();
+import { prisma } from "../prisma.js";
 
 export async function listTreatments(locale: string, pagination: PaginationParams) {
   const where = { locale, isActive: true };

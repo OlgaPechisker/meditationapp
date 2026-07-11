@@ -6,4 +6,3 @@ dist/
 coverage/
 .env.local
 server/uploads/
-package-lock.json

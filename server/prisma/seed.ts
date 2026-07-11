@@ -1,6 +1,21 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { config as loadEnv } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const prisma = new PrismaClient();
+const currentDir = dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: resolve(currentDir, "../.env") });
+loadEnv({ path: resolve(currentDir, "../../.env") });
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required to seed the database");
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: databaseUrl }),
+});
 
 async function main() {
   // Clear existing data

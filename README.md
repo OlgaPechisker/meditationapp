@@ -6,7 +6,7 @@ REST API backend for the Einat Shomonov meditation, healing & wellness practitio
 
 ## Tech Stack
 
-- **Runtime:** Node.js 20+
+- **Runtime:** Node.js 24.15+ with npm 11.6.2
 - **Framework:** Express 5
 - **ORM:** Prisma
 - **Database:** PostgreSQL 16
@@ -28,8 +28,10 @@ REST API backend for the Einat Shomonov meditation, healing & wellness practitio
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 24.15+ with npm 11.6.2
 - PostgreSQL 16 (or Docker)
+
+The repository pins these versions in `.nvmrc`, `engines`, and `packageManager`. Use `npm ci` for reproducible installs.
 
 ### 1. Start the database
 ```bash
@@ -38,10 +40,9 @@ docker-compose up -d
 
 ### 2. Install & migrate
 ```bash
-cd server
-npm install
-npx prisma migrate dev
-npx prisma db seed
+npm ci
+npm run db:migrate
+npm run db:seed
 ```
 
 ### 3. Run the dev server
@@ -78,6 +79,12 @@ npm run e2e:install
 # Run tests
 npm run e2e
 ```
+
+## CI and dependency policy
+
+GitHub Actions runs the database migration, seed, build, tests, API startup smoke test, and `npm audit --omit=dev --audit-level=high` on every pull request. Production critical and high audit findings block CI; development-only findings are reviewed separately.
+
+Set `TEST_DATABASE_URL` when running the API suite against an isolated database; it takes precedence over a local `.env` database URL.
 
 ## Admin Access
 

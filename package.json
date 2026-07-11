@@ -5,25 +5,24 @@
     "server"
   ],
   "scripts": {
-    "build": "cd server && npm run build && npx prisma generate",
-    "start": "cd server && npx prisma migrate deploy && node dist/index.js",
-    "dev:server": "cd server && npm run dev",
-    "db:migrate": "cd server && npx prisma migrate dev",
-    "db:seed": "cd server && npx prisma db seed",
-    "db:studio": "cd server && npx prisma studio",
-    "e2e": "cd e2e && npx playwright test",
-    "e2e:ui": "cd e2e && npx playwright test --ui",
-    "e2e:report": "cd e2e && npx playwright show-report ../playwright-report",
-    "e2e:install": "npx playwright install --with-deps chromium"
+    "build": "npm exec --workspace=server -- prisma generate && npm run build --workspace=server",
+    "start": "npm exec --workspace=server -- prisma migrate deploy && npm run start --workspace=server",
+    "dev:server": "npm run dev --workspace=server",
+    "db:migrate": "npm exec --workspace=server -- prisma migrate dev",
+    "db:seed": "npm exec --workspace=server -- prisma db seed",
+    "db:studio": "npm exec --workspace=server -- prisma studio",
+    "e2e": "npm exec -- playwright test --config=e2e/playwright.config.ts",
+    "e2e:ui": "npm exec -- playwright test --config=e2e/playwright.config.ts --ui",
+    "e2e:report": "npm exec -- playwright show-report playwright-report",
+    "e2e:install": "npm exec playwright install -- --with-deps chromium"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.15.0 <25",
+    "npm": "11.6.2"
   },
+  "packageManager": "npm@11.6.2",
 
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "@prisma/client": "^6.19.3",
-    "prisma": "^6.19.3",
-    "tsx": "^4.22.3"
+    "@playwright/test": "^1.60.0"
   }
 }

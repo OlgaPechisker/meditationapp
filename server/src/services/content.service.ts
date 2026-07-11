@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { paginate, paginatedResponse, PaginationParams } from "../utils/pagination.js";
-
-const prisma = new PrismaClient();
+import { prisma } from "../prisma.js";
 
 export async function getContent(key: string, locale: string) {
   return prisma.siteContent.findUnique({ where: { key_locale: { key, locale } } });
