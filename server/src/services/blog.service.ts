@@ -35,7 +35,7 @@ export async function createPost(data: {
 }
 
 export async function updatePost(id: number, data: Partial<{
-  title: string; excerpt: string; content: string; imageUrl: string; publishedAt: Date | null;
+  slug: string; title: string; excerpt: string; content: string; imageUrl: string; publishedAt: Date | null;
 }>) {
   return prisma.blogPost.update({ where: { id }, data });
 }

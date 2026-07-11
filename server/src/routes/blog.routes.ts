@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as blogService from "../services/blog.service.js";
+import { richTextSchema } from "../utils/rich-text.js";
 
 export const blogRoutes = Router();
 
@@ -26,9 +27,18 @@ blogRoutes.get("/:slug", async (req: Request, res: Response) => {
 
 const createSchema = z.object({
   slug: z.string().min(1), locale: z.string().default("he"), title: z.string().min(1),
-  excerpt: z.string().optional(), content: z.string().min(1),
+  excerpt: z.string().optional(), content: richTextSchema,
   imageUrl: z.string().url().optional(), publishedAt: z.coerce.date().optional(),
-});
+}).strict();
+
+const patchSchema = z.object({
+  slug: z.string().min(1).optional(),
+  title: z.string().min(1).optional(),
+  excerpt: z.string().optional(),
+  content: richTextSchema.optional(),
+  imageUrl: z.string().url().optional(),
+  publishedAt: z.coerce.date().nullable().optional(),
+}).strict();
 
 blogRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
@@ -40,7 +50,9 @@ blogRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 blogRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const post = await blogService.updatePost(id, req.body);
+  const parsed = patchSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+  const post = await blogService.updatePost(id, parsed.data);
   res.json(post);
 });
 

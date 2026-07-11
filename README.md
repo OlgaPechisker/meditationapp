@@ -89,3 +89,14 @@ Set `TEST_DATABASE_URL` when running the API suite against an isolated database;
 ## Admin Access
 
 Navigate to `/admin/login` in the frontend and enter the admin password (set via `ADMIN_PASSWORD`, default: `admin123`, or provide `ADMIN_PASSWORD_HASH`).
+
+## Rich content
+
+Blog bodies, the `about` content entry, treatment descriptions, and lecture descriptions are stored as sanitized semantic HTML. Supported formatting is paragraphs, `h2`/`h3`, bold, italic, ordered and unordered lists, safe HTTP(S)/mailto links, and the `ql-align-{right,center,left}` and `ql-direction-{rtl,ltr}` classes. Unsupported pasted markup, inline styles, embeds, and unsafe URLs are removed.
+
+To convert legacy records, first review the dry-run report and back up its listed records, then apply it:
+
+```bash
+npm run migrate:rich-text --workspace=server
+npm run migrate:rich-text --workspace=server -- --apply
+```

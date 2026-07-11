@@ -74,7 +74,7 @@ test.describe('Security', () => {
 
   // ── SEC-5 ──────────────────────────────────────────────────────────────────
 
-  test('SEC-5: XSS in blog post content is escaped and not executed', async ({ page, request }) => {
+  test('SEC-5: XSS in blog post content is removed and not executed', async ({ page, request }) => {
     const token = await getAdminToken(request);
     const post = await createBlogPost(request, token, {
       title:       'SEC-5 XSS Test Post',
@@ -91,11 +91,34 @@ test.describe('Security', () => {
     try {
       await page.goto(`/blog/${post.slug}`);
       await expect(page.locator('[data-testid="post-content"]')).toBeVisible();
-      // Raw <script> tag must appear as escaped text, not as a live element
-      await expect(page.locator('[data-testid="post-content"]')).toContainText('<script>');
+      await expect(page.locator('[data-testid="post-content"]')).toContainText('Safe content');
+      await expect(page.locator('[data-testid="post-content"]')).toContainText('More safe content');
+      await expect(page.locator('[data-testid="post-content"]')).not.toContainText('<script>');
+      await expect(page.locator('[data-testid="post-content"] script')).toHaveCount(0);
       expect(scriptExecuted, 'XSS script must not execute').toBe(false);
     } finally {
       await deleteBlogPost(request, token, post.id).catch(() => {});
+    }
+  });
+
+  // ── SEC-8 ──────────────────────────────────────────────────────────────────
+
+  test('SEC-8: Rich-content write endpoints reject unknown fields', async ({ request }) => {
+    const token = await getAdminToken(request);
+    const headers = { Authorization: `Bearer ${token}` };
+    const endpoints = [
+      { method: 'patch', path: '/api/blog/1', body: { unexpected: true } },
+      { method: 'patch', path: '/api/treatments/1', body: { unexpected: true } },
+      { method: 'patch', path: '/api/lectures/1', body: { unexpected: true } },
+      { method: 'put', path: '/api/content', body: { key: 'about', value: '<p>content</p>', unexpected: true } },
+    ] as const;
+
+    for (const endpoint of endpoints) {
+      const response = await request[endpoint.method](`${API_URL}${endpoint.path}`, {
+        data: endpoint.body,
+        headers,
+      });
+      expect(response.status(), `${endpoint.method.toUpperCase()} ${endpoint.path}`).toBe(400);
     }
   });
 

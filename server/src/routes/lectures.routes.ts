@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as lectureService from "../services/lectures.service.js";
+import { richTextSchema } from "../utils/rich-text.js";
 
 export const lectureRoutes = Router();
 
@@ -26,12 +27,12 @@ lectureRoutes.get("/:slug", async (req: Request, res: Response) => {
 
 const createSchema = z.object({
   slug: z.string().optional(), locale: z.string().default("he"), title: z.string().min(1),
-  description: z.string().min(1), date: z.coerce.date(),
+  description: richTextSchema, date: z.coerce.date(),
   location: z.string().optional(),
   price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
   imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
   isActive: z.boolean().optional(),
-});
+}).strict();
 
 lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
@@ -47,13 +48,13 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 const patchSchema = z.object({
   slug: z.string().optional(),
   title: z.string().min(1).optional(),
-  description: z.string().optional(),
+  description: richTextSchema.optional(),
   date: z.coerce.date().optional(),
   location: z.string().optional(),
   price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
   imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
   isActive: z.boolean().optional(),
-});
+}).strict();
 
 lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);

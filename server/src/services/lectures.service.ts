@@ -22,7 +22,7 @@ export async function createLecture(data: {
 }
 
 export async function updateLecture(id: number, data: Partial<{
-  title: string; description: string; date: Date; location: string;
+  slug: string; title: string; description: string; date: Date; location: string;
   price: string; imageUrl: string; isActive: boolean;
 }>) {
   return prisma.lecture.update({ where: { id }, data });

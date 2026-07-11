@@ -17,12 +17,13 @@ export async function getTreatmentBySlug(slug: string, locale: string) {
 export async function createTreatment(data: {
   slug: string; locale: string; title: string; subtitle?: string;
   description: string; price?: string; imageUrl?: string; sortOrder?: number;
+  isActive?: boolean;
 }) {
   return prisma.treatment.create({ data });
 }
 
 export async function updateTreatment(id: number, data: Partial<{
-  title: string; subtitle: string; description: string; price: string;
+  slug: string; title: string; subtitle: string; description: string; price: string;
   imageUrl: string; sortOrder: number; isActive: boolean;
 }>) {
   return prisma.treatment.update({ where: { id }, data });

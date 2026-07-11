@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as treatmentService from "../services/treatments.service.js";
+import { richTextSchema } from "../utils/rich-text.js";
 
 export const treatmentRoutes = Router();
 
@@ -26,11 +27,11 @@ treatmentRoutes.get("/:slug", async (req: Request, res: Response) => {
 
 const createSchema = z.object({
   slug: z.string().min(1), locale: z.string().default("he"), title: z.string().min(1),
-  subtitle: z.string().optional(), description: z.string().min(1),
+  subtitle: z.string().optional(), description: richTextSchema,
   price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
   imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
   sortOrder: z.number().int().optional(), isActive: z.boolean().optional(),
-});
+}).strict();
 
 treatmentRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
@@ -42,12 +43,13 @@ treatmentRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 const patchSchema = z.object({
   slug: z.string().optional(),
   title: z.string().min(1).optional(),
-  description: z.string().optional(),
+  subtitle: z.string().optional(),
+  description: richTextSchema.optional(),
   price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
   imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
-});
+}).strict();
 
 treatmentRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);

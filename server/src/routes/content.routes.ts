@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as contentService from "../services/content.service.js";
+import { validateRichText } from "../utils/rich-text.js";
 
 export const contentRoutes = Router();
 
@@ -27,11 +28,20 @@ const upsertSchema = z.object({
   key: z.string().min(1),
   locale: z.string().default("he"),
   value: z.string().min(1),
-});
+}).strict();
 
 contentRoutes.put("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const content = await contentService.upsertContent(parsed.data.key, parsed.data.locale, parsed.data.value);
+  let value = parsed.data.value;
+  if (parsed.data.key === "about") {
+    try {
+      value = validateRichText(value);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Invalid rich text" });
+      return;
+    }
+  }
+  const content = await contentService.upsertContent(parsed.data.key, parsed.data.locale, value);
   res.json(content);
 });
