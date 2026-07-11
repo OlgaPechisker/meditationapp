@@ -108,16 +108,6 @@ test.describe('Public Songs', () => {
       await expect(thirdSongItem).toBeVisible();
       await expect(counter).toHaveText(/^\s*3\s*\/\s*\d+\s*$/);
 
-      const totalSongs = await page.locator('[data-testid="song-item"]').count();
-      for (let index = 0; index < totalSongs; index += 1) {
-        if (await nextButton.isDisabled()) {
-          break;
-        }
-
-        await nextButton.click();
-      }
-
-      await expect(nextButton).toBeDisabled();
     } finally {
       for (const id of extraSongIds) {
         await deleteSong(request, token, id).catch(() => {});

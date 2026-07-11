@@ -155,7 +155,7 @@ adminTest.describe('Admin Lectures', () => {
     await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
   });
 
-  adminTest('ALEC-N2: imageUrl that is not valid URL → validation error', async ({ page }) => {
+  adminTest('ALEC-N2: image upload rejects a non-image file', async ({ page }) => {
     await page.goto('/admin/lectures');
 
     await adminTest.step('open form', async () => {
@@ -163,14 +163,20 @@ adminTest.describe('Admin Lectures', () => {
       await expect(page.locator('[data-testid="lecture-form"]')).toBeVisible();
     });
 
-    const futureDate = new Date();
-    futureDate.setMonth(futureDate.getMonth() + 1);
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/upload') &&
+          response.request().method() === 'POST' &&
+          !response.ok(),
+      ),
+      page.locator('[data-testid="field-imageUrl"] input[type="file"]').setInputFiles({
+        name: 'not-an-image.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('not an image'),
+      }),
+    ]);
 
-    await page.locator('[data-testid="field-title"]').fill('Lecture With Bad Image URL');
-    await page.locator('[data-testid="field-date"]').fill(futureDate.toISOString().slice(0, 16));
-    await page.locator('[data-testid="field-imageUrl"]').fill('not-a-valid-url');
-    await page.locator('[data-testid="form-save"]').click();
-
-    await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-imageUrl"] .upload-error')).toBeVisible();
   });
 });

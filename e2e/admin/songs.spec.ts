@@ -1,8 +1,14 @@
-import path from 'path';
 import { adminTest, expect, Page } from '../fixtures/auth.fixture';
 import { createSong, deleteSong, getAdminToken } from '../fixtures/factory';
 
-const fixtureImagePath = path.join(__dirname, '..', 'fixtures', 'test-image.png');
+const testImage = {
+  name: 'test-image.png',
+  mimeType: 'image/png',
+  buffer: Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9nt9sAAAAASUVORK5CYII=',
+    'base64',
+  ),
+};
 
 function getSortOrderInput(page: Page) {
   return page.locator('[data-testid="field-sortOrder"], [data-testid="song-form"] input[type="number"]').first();
@@ -82,7 +88,7 @@ adminTest.describe('Admin Songs', () => {
           response.ok(),
         { timeout: 10000 },
       ),
-      fileInput.setInputFiles(fixtureImagePath),
+      fileInput.setInputFiles(testImage),
     ]);
 
     await page.waitForTimeout(500);
@@ -117,7 +123,15 @@ adminTest.describe('Admin Songs', () => {
     await expect(page.locator('[data-testid="song-form"]')).toBeVisible();
 
     await getSortOrderInput(page).fill(newSortOrder);
-    await page.locator('[data-testid="form-save"]').click();
+    const [updateResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === `/api/songs/${song.id}` &&
+          response.request().method() === 'PATCH',
+      ),
+      page.locator('[data-testid="form-save"]').click(),
+    ]);
+    expect(updateResponse.ok()).toBe(true);
 
     await expect(row).toBeVisible();
     await row.locator('[data-testid="song-edit-btn"]').click();

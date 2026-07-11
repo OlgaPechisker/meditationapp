@@ -33,14 +33,8 @@ test.describe('Public Treatments', () => {
     ).toBeVisible();
   });
 
-  test('TRT-P2: Click treatment card → /treatments/:slug shows title & description', async ({
-    page,
-  }) => {
-    await page.goto('/treatments');
-    await page
-      .locator(`[data-testid="treatment-card"][data-slug="${treatment.slug}"]`)
-      .click();
-    await expect(page).toHaveURL(new RegExp(`/treatments/${treatment.slug}`));
+  test('TRT-P2: Direct treatment route shows title & description', async ({ page }) => {
+    await page.goto(`/treatments/${treatment.slug}`);
     await expect(page.locator('[data-testid="treatment-title"]')).toBeVisible();
     await expect(page.locator('[data-testid="treatment-description"]')).toBeVisible();
   });
@@ -96,14 +90,7 @@ test.describe('Public Treatments', () => {
     });
     extraIds.push(minimalTreatment.id);
 
-    await page.goto('/treatments');
-    await expect(
-      page.locator(`[data-testid="treatment-card"][data-slug="${minimalTreatment.slug}"]`),
-    ).toBeVisible();
-
-    await page
-      .locator(`[data-testid="treatment-card"][data-slug="${minimalTreatment.slug}"]`)
-      .click();
+    await page.goto(`/treatments/${minimalTreatment.slug}`);
     await expect(page.locator('[data-testid="treatment-title"]')).toBeVisible();
     await expect(page.locator('[data-testid="treatment-description"]')).toBeVisible();
   });

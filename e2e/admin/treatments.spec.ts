@@ -1,6 +1,15 @@
 import { adminTest, expect } from '../fixtures/auth.fixture';
 import { getAdminToken, createTreatment } from '../fixtures/factory';
 
+const testImage = {
+  name: 'test-image.png',
+  mimeType: 'image/png',
+  buffer: Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9nt9sAAAAASUVORK5CYII=',
+    'base64',
+  ),
+};
+
 adminTest.describe('Admin Treatments', () => {
   let token = '';
 
@@ -123,7 +132,15 @@ adminTest.describe('Admin Treatments', () => {
     await page.locator('[data-testid="field-title"]').fill('ATRT-P5 All Fields');
     await page.locator('[data-testid="field-description"]').fill('Full optional fields description.');
     await page.locator('[data-testid="field-price"]').fill('250');
-    await page.locator('[data-testid="field-imageUrl"]').fill('https://example.com/treatment.jpg');
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/upload') &&
+          response.request().method() === 'POST' &&
+          response.ok(),
+      ),
+      page.locator('[data-testid="field-imageUrl"] input[type="file"]').setInputFiles(testImage),
+    ]);
     await page.locator('[data-testid="field-sortOrder"]').fill('3');
     await page.locator('[data-testid="form-save"]').click();
 
@@ -170,7 +187,7 @@ adminTest.describe('Admin Treatments', () => {
     },
   );
 
-  adminTest('ATRT-N3: imageUrl that is not a valid URL → validation error', async ({ page }) => {
+  adminTest('ATRT-N3: image upload rejects a non-image file', async ({ page }) => {
     await page.goto('/admin/treatments');
 
     await adminTest.step('open form', async () => {
@@ -178,12 +195,20 @@ adminTest.describe('Admin Treatments', () => {
       await expect(page.locator('[data-testid="treatment-form"]')).toBeVisible();
     });
 
-    const slug = `atrt-n3-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    await page.locator('[data-testid="field-slug"]').fill(slug);
-    await page.locator('[data-testid="field-title"]').fill('Treatment With Bad URL');
-    await page.locator('[data-testid="field-imageUrl"]').fill('not-a-valid-url');
-    await page.locator('[data-testid="form-save"]').click();
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/upload') &&
+          response.request().method() === 'POST' &&
+          !response.ok(),
+      ),
+      page.locator('[data-testid="field-imageUrl"] input[type="file"]').setInputFiles({
+        name: 'not-an-image.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('not an image'),
+      }),
+    ]);
 
-    await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-imageUrl"] .upload-error')).toBeVisible();
   });
 });
