@@ -34,6 +34,18 @@ describe("isYouTubeUrl", () => {
     expect(isYouTubeUrl("https://youtu.be/")).toBe(false);
   });
 
+  it("rejects trailing path/fragment after the id (frontend alignment)", () => {
+    expect(isYouTubeUrl("https://youtu.be/inpok4MKVLM/anything")).toBe(false);
+    expect(isYouTubeUrl("https://www.youtube.com/embed/inpok4MKVLM/extra")).toBe(false);
+    expect(isYouTubeUrl("https://youtu.be/inpok4MKVLM#frag")).toBe(false);
+    expect(isYouTubeUrl("https://www.youtube.com/watch?v=inpok4MKVLM#frag")).toBe(false);
+  });
+
+  it("accepts a single trailing slash after the id", () => {
+    expect(isYouTubeUrl("https://youtu.be/inpok4MKVLM/")).toBe(true);
+    expect(isYouTubeUrl("https://www.youtube.com/embed/inpok4MKVLM/")).toBe(true);
+  });
+
   it("rejects malformed / non-http URLs", () => {
     expect(isYouTubeUrl("not-a-url")).toBe(false);
     expect(isYouTubeUrl("ftp://youtube.com/watch?v=inpok4MKVLM")).toBe(false);
