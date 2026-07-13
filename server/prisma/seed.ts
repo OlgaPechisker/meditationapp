@@ -62,6 +62,18 @@ async function main() {
     },
   });
 
+  await prisma.blogPost.create({
+    data: {
+      slug: "meditation-video",
+      locale: "he",
+      title: "מדיטציה מודרכת בוידאו",
+      excerpt: "סרטון מדיטציה מודרכת קצר לרגיעה ולנשימה מודעת",
+      content: "<p>בפוסט זה תמצאו סרטון מדיטציה מודרכת קצר. שבו בנוחות, נשמו עמוק וצפו.</p>",
+      videoUrl: "https://www.youtube.com/watch?v=inpok4MKVLM",
+      publishedAt: new Date(),
+    },
+  });
+
   // Lectures
   await prisma.lecture.create({
     data: {

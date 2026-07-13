@@ -4,12 +4,17 @@ import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as blogService from "../services/blog.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
+import { youTubeUrlSchema } from "../utils/video.js";
 
 export const blogRoutes = Router();
 
+const blogListQuerySchema = paginationSchema.extend({
+  search: z.string().trim().min(1).max(100).optional(),
+});
+
 blogRoutes.get("/", async (req: Request, res: Response) => {
-  const pagination = paginationSchema.parse(req.query);
-  const result = await blogService.listPublishedPosts(req.locale, pagination);
+  const query = blogListQuerySchema.parse(req.query);
+  const result = await blogService.listPublishedPosts(req.locale, query);
   res.json(result);
 });
 
@@ -28,7 +33,8 @@ blogRoutes.get("/:slug", async (req: Request, res: Response) => {
 const createSchema = z.object({
   slug: z.string().min(1), locale: z.string().default("he"), title: z.string().min(1),
   excerpt: z.string().optional(), content: richTextSchema,
-  imageUrl: z.string().url().optional(), publishedAt: z.coerce.date().optional(),
+  imageUrl: z.string().url().optional(), videoUrl: youTubeUrlSchema.optional(),
+  publishedAt: z.coerce.date().optional(),
 }).strict();
 
 const patchSchema = z.object({
@@ -37,6 +43,7 @@ const patchSchema = z.object({
   excerpt: z.string().optional(),
   content: richTextSchema.optional(),
   imageUrl: z.string().url().optional(),
+  videoUrl: youTubeUrlSchema.nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional(),
 }).strict();
 
