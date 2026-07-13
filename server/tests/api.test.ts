@@ -42,6 +42,55 @@ describe("Blog API", () => {
     expect(res.status).toBe(200);
     expect(res.body.title).toBeDefined();
   });
+
+  it("GET /api/blog includes videoUrl in the post shape", async () => {
+    const res = await request(app).get("/api/blog?locale=he&limit=100");
+    expect(res.status).toBe(200);
+    const videoPost = res.body.data.find((p: { slug: string }) => p.slug === "meditation-video");
+    expect(videoPost).toBeDefined();
+    expect(videoPost.videoUrl).toContain("youtube.com");
+  });
+
+  it("GET /api/blog?search returns only matching posts", async () => {
+    const res = await request(app).get("/api/blog?locale=he&search=" + encodeURIComponent("ברוכים"));
+    expect(res.status).toBe(200);
+    const slugs = res.body.data.map((p: { slug: string }) => p.slug);
+    expect(slugs).toContain("welcome");
+    expect(slugs).not.toContain("meditation-video");
+  });
+
+  it("POST /api/blog persists a valid YouTube videoUrl", async () => {
+    const login = await request(app).post("/api/auth/login").send({ password: "test-password" });
+    expect(login.status).toBe(200);
+    const token = login.body.token as string;
+
+    const slug = `video-post-${Date.now()}`;
+    const res = await request(app)
+      .post("/api/blog")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        slug, locale: "he", title: "וידאו", content: "<p>תוכן</p>",
+        videoUrl: "https://www.youtube.com/watch?v=inpok4MKVLM",
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.videoUrl).toBe("https://www.youtube.com/watch?v=inpok4MKVLM");
+
+    await request(app).delete(`/api/blog/${res.body.id}`).set("Authorization", `Bearer ${token}`);
+  });
+
+  it("POST /api/blog rejects a non-YouTube videoUrl", async () => {
+    const login = await request(app).post("/api/auth/login").send({ password: "test-password" });
+    const token = login.body.token as string;
+
+    const res = await request(app)
+      .post("/api/blog")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        slug: `bad-video-${Date.now()}`, locale: "he", title: "וידאו", content: "<p>תוכן</p>",
+        videoUrl: "https://vimeo.com/123456789",
+      });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("Lectures API", () => {
