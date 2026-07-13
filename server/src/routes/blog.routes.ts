@@ -13,8 +13,9 @@ const blogListQuerySchema = paginationSchema.extend({
 });
 
 blogRoutes.get("/", async (req: Request, res: Response) => {
-  const query = blogListQuerySchema.parse(req.query);
-  const result = await blogService.listPublishedPosts(req.locale, query);
+  const parsed = blogListQuerySchema.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+  const result = await blogService.listPublishedPosts(req.locale, parsed.data);
   res.json(result);
 });
 
