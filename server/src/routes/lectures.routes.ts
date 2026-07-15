@@ -32,18 +32,26 @@ const priceSchema = z.preprocess(
   z.coerce.number().int().min(0).optional(),
 );
 const imageUrlSchema = z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional());
-const highlightsSchema = z.array(z.string().trim().min(1)).min(1);
+const highlightsSchema = z.array(z.string().trim().min(1));
+const optionalTextSchema = z.preprocess(
+  (v) => (v === "" ? undefined : v),
+  z.string().trim().min(1).optional(),
+);
+const optionalNullableTextSchema = z.preprocess(
+  (v) => (v === "" ? null : v),
+  z.string().trim().min(1).nullable().optional(),
+);
 
 const sharedCreateFields = {
   slug: z.string().trim().optional(),
   locale: z.string().default("he"),
   title: z.string().trim().min(1),
-  subtitle: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
+  subtitle: optionalTextSchema,
+  summary: optionalTextSchema,
   description: richTextSchema,
-  audience: z.string().trim().min(1),
-  durationLabel: z.string().trim().min(1),
-  highlights: highlightsSchema,
+  audience: optionalTextSchema,
+  durationLabel: optionalTextSchema,
+  highlights: highlightsSchema.optional(),
   location: z.string().trim().min(1),
   price: priceSchema,
   imageUrl: imageUrlSchema,
@@ -110,12 +118,12 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
     locale: input.locale,
     type: input.type,
     title: input.title,
-    subtitle: input.subtitle,
-    summary: input.summary,
+    subtitle: input.subtitle ?? null,
+    summary: input.summary ?? null,
     description: input.description,
-    audience: input.audience,
-    durationLabel: input.durationLabel,
-    highlights: input.highlights,
+    audience: input.audience ?? null,
+    durationLabel: input.durationLabel ?? null,
+    highlights: input.highlights ?? [],
     location: input.location,
     price: input.price ?? null,
     imageUrl: input.imageUrl ?? null,
@@ -147,11 +155,11 @@ const patchSchema = z
     slug: z.string().trim().min(1).optional(),
     type: z.enum(["SCHEDULED", "ON_DEMAND"]).optional(),
     title: z.string().trim().min(1).optional(),
-    subtitle: z.string().trim().min(1).optional(),
-    summary: z.string().trim().min(1).optional(),
+    subtitle: optionalNullableTextSchema,
+    summary: optionalNullableTextSchema,
     description: richTextSchema.optional(),
-    audience: z.string().trim().min(1).optional(),
-    durationLabel: z.string().trim().min(1).optional(),
+    audience: optionalNullableTextSchema,
+    durationLabel: optionalNullableTextSchema,
     highlights: highlightsSchema.optional(),
     date: z.coerce.date().nullable().optional(),
     location: z.string().trim().min(1).optional(),
