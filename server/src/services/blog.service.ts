@@ -59,7 +59,7 @@ export async function softDeletePost(id: number) {
 }
 
 export async function listAllPosts(locale: string, pagination: PaginationParams) {
-  const where = { locale };
+  const where = { locale, deletedAt: null };
   const [data, total] = await Promise.all([
     prisma.blogPost.findMany({ where, orderBy: { createdAt: "desc" }, ...paginate(pagination) }),
     prisma.blogPost.count({ where }),

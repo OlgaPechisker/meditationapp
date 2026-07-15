@@ -16,7 +16,7 @@ adminTest.describe('Admin Blog', () => {
     }
   });
 
-  adminTest('ABLOG-P1: /admin/blog shows all posts including drafts', async ({
+  adminTest('ABLOG-P1: /admin/blog shows active posts including drafts', async ({
     page,
     request,
   }) => {
@@ -136,7 +136,7 @@ adminTest.describe('Admin Blog', () => {
   });
 
   adminTest(
-    'ABLOG-P5: Delete post → soft-deleted; no longer in public list; still visible in admin',
+    'ABLOG-P5: Delete post → no longer in admin or public lists',
     async ({ page, request }) => {
       const post = await createBlogPost(request, token, {
         publishedAt: new Date(Date.now() - 60_000).toISOString(),
@@ -149,10 +149,10 @@ adminTest.describe('Admin Blog', () => {
       await expect(row).toBeVisible();
       await row.locator('[data-testid="post-delete-btn"]').click();
 
-      // Soft-deleted post still appears in admin list
+      // Soft-deleted post no longer appears in the admin list
       await expect(
         page.locator(`[data-testid="post-row"][data-slug="${post.slug}"]`),
-      ).toBeVisible();
+      ).not.toBeVisible();
 
       // Soft-deleted post NOT shown on public blog
       await page.goto('/blog');
