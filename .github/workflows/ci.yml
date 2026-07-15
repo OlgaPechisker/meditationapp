@@ -37,6 +37,7 @@ jobs:
           node-version: 24.15.0
           cache: npm
       - run: npm ci
+      - run: npm exec --workspace=server -- prisma generate
       - run: npm exec --workspace=server -- prisma validate
       - run: npm exec --workspace=server -- prisma migrate deploy
       - run: npm exec --workspace=server -- prisma db seed
