@@ -49,7 +49,7 @@ export async function createPost(data: {
 }
 
 export async function updatePost(id: number, data: Partial<{
-  slug: string; title: string; excerpt: string; content: string; imageUrl: string; videoUrl: string | null; publishedAt: Date | null;
+  slug: string; title: string; excerpt: string; content: string; imageUrl: string | null; videoUrl: string | null; publishedAt: Date | null;
 }>) {
   return prisma.blogPost.update({ where: { id }, data });
 }

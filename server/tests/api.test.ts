@@ -91,6 +91,30 @@ describe("Blog API", () => {
       });
     expect(res.status).toBe(400);
   });
+
+  it("PATCH /api/blog clears an image when imageUrl is null", async () => {
+    const login = await request(app).post("/api/auth/login").send({ password: "test-password" });
+    const token = login.body.token as string;
+    const slug = `clear-image-${Date.now()}`;
+
+    const created = await request(app)
+      .post("/api/blog")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        slug, locale: "he", title: "Image post", content: "<p>Content</p>",
+        imageUrl: "https://example.com/image.jpg",
+      });
+    expect(created.status).toBe(201);
+
+    const updated = await request(app)
+      .patch(`/api/blog/${created.body.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ imageUrl: null });
+    expect(updated.status).toBe(200);
+    expect(updated.body.imageUrl).toBeNull();
+
+    await request(app).delete(`/api/blog/${created.body.id}`).set("Authorization", `Bearer ${token}`);
+  });
 });
 
 describe("Lectures API", () => {

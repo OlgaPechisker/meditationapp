@@ -43,7 +43,7 @@ const patchSchema = z.object({
   title: z.string().min(1).optional(),
   excerpt: z.string().optional(),
   content: richTextSchema.optional(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().nullable().optional(),
   videoUrl: youTubeUrlSchema.nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional(),
 }).strict();
