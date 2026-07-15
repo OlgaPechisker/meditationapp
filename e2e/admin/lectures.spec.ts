@@ -2,15 +2,10 @@ import { adminTest, expect } from '../fixtures/auth.fixture';
 import { getAdminToken, createLecture } from '../fixtures/factory';
 import type { Page } from '@playwright/test';
 
-/** Fills the fields shared by every lecture type (leaves type-specific fields to the caller). */
-async function fillSharedFields(page: Page, title: string) {
+/** Fills only the fields required for every lecture type. */
+async function fillRequiredFields(page: Page, title: string) {
   await page.locator('[data-testid="field-title"]').fill(title);
-  await page.locator('[data-testid="field-subtitle"]').fill('Subtitle text');
-  await page.locator('[data-testid="field-durationLabel"]').fill('90 minutes');
-  await page.locator('[data-testid="field-summary"]').fill('A short summary for the lecture.');
   await page.locator('[data-testid="field-description"] .ql-editor').fill('Full description body for the lecture.');
-  await page.locator('[data-testid="field-audience"]').fill('Anyone interested');
-  await page.locator('[data-testid="field-highlight-0"]').fill('First highlight');
   await page.locator('[data-testid="field-location"]').fill('Test Hall');
 }
 
@@ -31,6 +26,28 @@ adminTest.describe('Admin Lectures', () => {
     ).toBeVisible();
   });
 
+  adminTest('ALEC-P1b: Required fields show indicators and inline feedback', async ({ page }) => {
+    await page.goto('/admin/lectures');
+    await page.locator('[data-testid="add-lecture-btn"]').click();
+
+    await expect(page.locator('[data-testid="required-marker-type"]')).toBeVisible();
+    await expect(page.locator('[data-testid="required-marker-title"]')).toBeVisible();
+    await expect(page.locator('[data-testid="required-marker-description"]')).toBeVisible();
+    await expect(page.locator('[data-testid="required-marker-location"]')).toBeVisible();
+    await expect(page.locator('[data-testid="required-marker-date"]')).toBeVisible();
+
+    await page.locator('[data-testid="form-save"]').click();
+    await expect(page.locator('[data-testid="field-error-title"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-error-description"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-error-location"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-error-date"]')).toBeVisible();
+
+    await page.locator('[data-testid="field-type"]').selectOption('ON_DEMAND');
+    await expect(page.locator('[data-testid="required-marker-date"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="required-marker-minimumParticipants"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-error-minimumParticipants"]')).toBeVisible();
+  });
+
   adminTest('ALEC-P2: Create a scheduled lecture → appears in list', async ({ page }) => {
     const futureDate = new Date();
     futureDate.setMonth(futureDate.getMonth() + 1);
@@ -43,9 +60,8 @@ adminTest.describe('Admin Lectures', () => {
       await expect(page.locator('[data-testid="lecture-form"]')).toBeVisible();
     });
 
-    await fillSharedFields(page, 'ALEC-P2 New Lecture');
+    await fillRequiredFields(page, 'ALEC-P2 New Lecture');
     await page.locator('[data-testid="field-date"]').fill(dateValue);
-    await page.locator('[data-testid="field-price"]').fill('100');
     await page.locator('[data-testid="form-save"]').click();
 
     await expect(
@@ -66,7 +82,7 @@ adminTest.describe('Admin Lectures', () => {
     await page.locator('[data-testid="field-type"]').selectOption('ON_DEMAND');
     // The date field is replaced by a minimum-participants field for on-demand lectures.
     await expect(page.locator('[data-testid="field-date"]')).toHaveCount(0);
-    await fillSharedFields(page, 'ALEC-P2b On-Demand Lecture');
+    await fillRequiredFields(page, 'ALEC-P2b On-Demand Lecture');
     await page.locator('[data-testid="field-minimumParticipants"]').fill('10');
     // Price intentionally left empty (allowed for on-demand).
     await page.locator('[data-testid="form-save"]').click();
@@ -171,12 +187,11 @@ adminTest.describe('Admin Lectures', () => {
     });
 
     // Fill every required field except the (scheduled-only) date.
-    await fillSharedFields(page, 'Scheduled Without Date');
-    await page.locator('[data-testid="field-price"]').fill('100');
+    await fillRequiredFields(page, 'Scheduled Without Date');
     // Leave the date empty.
     await page.locator('[data-testid="form-save"]').click();
 
-    await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-error-date"]')).toBeVisible();
   });
 
   adminTest('ALEC-N1b: On-demand lecture with no minimum → validation error shown', async ({
@@ -190,11 +205,11 @@ adminTest.describe('Admin Lectures', () => {
     });
 
     await page.locator('[data-testid="field-type"]').selectOption('ON_DEMAND');
-    await fillSharedFields(page, 'On-Demand Without Minimum');
+    await fillRequiredFields(page, 'On-Demand Without Minimum');
     // Leave minimumParticipants empty.
     await page.locator('[data-testid="form-save"]').click();
 
-    await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
+    await expect(page.locator('[data-testid="field-error-minimumParticipants"]')).toBeVisible();
   });
 
   adminTest('ALEC-N2: image upload rejects a non-image file', async ({ page }) => {

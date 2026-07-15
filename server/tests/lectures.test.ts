@@ -19,15 +19,9 @@ function scheduledPayload(overrides: Record<string, unknown> = {}) {
     slug: `sched-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     locale: LOCALE,
     title: "Scheduled Lecture",
-    subtitle: "An evening talk",
-    summary: "A short summary of the lecture.",
     description: "<p>Full description of the lecture.</p>",
-    audience: "Anyone curious.",
-    durationLabel: "90 minutes",
-    highlights: ["First point", "Second point"],
     date: future.toISOString(),
     location: "Tel Aviv",
-    price: 90,
     ...overrides,
   };
 }
@@ -38,12 +32,7 @@ function onDemandPayload(overrides: Record<string, unknown> = {}) {
     slug: `ondemand-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     locale: LOCALE,
     title: "On Demand Lecture",
-    subtitle: "For groups",
-    summary: "A group session summary.",
     description: "<p>Group session description.</p>",
-    audience: "Teams and communities.",
-    durationLabel: "60-90 minutes",
-    highlights: ["Tailored content"],
     location: "At your office or online",
     minimumParticipants: 10,
     ...overrides,
@@ -66,15 +55,16 @@ describe("Lectures API — validation & contract", () => {
 
   const auth = () => ({ Authorization: `Bearer ${token}` });
 
-  it("creates a scheduled lecture with structured content", async () => {
+  it("creates a scheduled lecture with only required fields", async () => {
     const res = await request(app).post("/api/lectures").set(auth()).send(scheduledPayload());
     expect(res.status).toBe(201);
     created.push(res.body.id);
     expect(res.body.type).toBe("SCHEDULED");
     expect(res.body.date).toBeTruthy();
     expect(res.body.minimumParticipants).toBeNull();
-    expect(res.body.highlights).toEqual(["First point", "Second point"]);
-    expect(res.body.price).toBe(90);
+    expect(res.body.highlights).toEqual([]);
+    expect(res.body.price).toBeNull();
+    expect(res.body.subtitle).toBeNull();
   });
 
   it("creates an on-demand lecture without date or price", async () => {
@@ -111,6 +101,23 @@ describe("Lectures API — validation & contract", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a create payload without a lecture type", async () => {
+    const payload = scheduledPayload();
+    delete (payload as Record<string, unknown>).type;
+    const res = await request(app).post("/api/lectures").set(auth()).send(payload);
+    expect(res.status).toBe(400);
+    expect(res.body.error.fieldErrors).toHaveProperty("type");
+  });
+
+  it("rejects an optional text field when it is supplied blank", async () => {
+    const res = await request(app)
+      .post("/api/lectures")
+      .set(auth())
+      .send(scheduledPayload({ subtitle: "   " }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.fieldErrors).toHaveProperty("subtitle");
+  });
+
   it("rejects a scheduled lecture that also sets minimum participants", async () => {
     const res = await request(app)
       .post("/api/lectures")
@@ -119,13 +126,12 @@ describe("Lectures API — validation & contract", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejects a create payload missing required content fields", async () => {
+  it.each(["title", "description", "location"])("rejects a create payload missing %s", async (field) => {
     const payload = scheduledPayload();
-    delete (payload as Record<string, unknown>).subtitle;
-    delete (payload as Record<string, unknown>).highlights;
+    delete (payload as Record<string, unknown>)[field];
     const res = await request(app).post("/api/lectures").set(auth()).send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("subtitle");
+    expect(res.body.error.fieldErrors).toHaveProperty(field);
   });
 
   it("generates a slug when none is provided", async () => {
