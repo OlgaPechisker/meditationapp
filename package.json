@@ -21,8 +21,10 @@
     "npm": "11.6.2"
   },
   "packageManager": "npm@11.6.2",
-
   "devDependencies": {
     "@playwright/test": "^1.60.0"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "^1.1.5"
   }
 }
