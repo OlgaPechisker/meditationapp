@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as lectureService from "../services/lectures.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
+import { generateSlug } from "../utils/slug.js";
 
 export const lectureRoutes = Router();
 
@@ -25,43 +26,193 @@ lectureRoutes.get("/:slug", async (req: Request, res: Response) => {
   res.json(lecture);
 });
 
-const createSchema = z.object({
-  slug: z.string().optional(), locale: z.string().default("he"), title: z.string().min(1),
-  description: richTextSchema, date: z.coerce.date(),
-  location: z.string().optional(),
-  price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
-  imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
+// ---- Shared field schemas ----
+const priceSchema = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.coerce.number().int().min(0).optional(),
+);
+const imageUrlSchema = z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional());
+const highlightsSchema = z.array(z.string().trim().min(1)).min(1);
+
+const sharedCreateFields = {
+  slug: z.string().trim().optional(),
+  locale: z.string().default("he"),
+  title: z.string().trim().min(1),
+  subtitle: z.string().trim().min(1),
+  summary: z.string().trim().min(1),
+  description: richTextSchema,
+  audience: z.string().trim().min(1),
+  durationLabel: z.string().trim().min(1),
+  highlights: highlightsSchema,
+  location: z.string().trim().min(1),
+  price: priceSchema,
+  imageUrl: imageUrlSchema,
   isActive: z.boolean().optional(),
-}).strict();
+  sortOrder: z.coerce.number().int().optional(),
+};
+
+const scheduledCreateSchema = z
+  .object({
+    type: z.literal("SCHEDULED"),
+    date: z.coerce.date(),
+    minimumParticipants: z.null().optional(),
+    ...sharedCreateFields,
+  })
+  .strict();
+
+const onDemandCreateSchema = z
+  .object({
+    type: z.literal("ON_DEMAND"),
+    date: z.null().optional(),
+    minimumParticipants: z.coerce.number().int().min(1),
+    ...sharedCreateFields,
+  })
+  .strict();
+
+const createSchema = z.discriminatedUnion("type", [scheduledCreateSchema, onDemandCreateSchema]);
+
+const MAX_SLUG_CREATE_ATTEMPTS = 5;
+
+function isSlugLocaleConflict(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const prismaError = error as {
+    code?: unknown;
+    meta?: { modelName?: unknown; target?: unknown };
+  };
+  if (prismaError.code !== "P2002") {
+    return false;
+  }
+
+  const target = prismaError.meta?.target;
+  if (Array.isArray(target)) {
+    const targetName = target.filter((field): field is string => typeof field === "string").join(",");
+    return targetName.includes("slug") && targetName.includes("locale");
+  }
+  if (typeof target === "string") {
+    return target.includes("slug") && target.includes("locale");
+  }
+
+  // The Prisma PostgreSQL adapter currently omits constraint fields from P2002
+  // metadata. Lecture has only the slug/locale unique constraint.
+  return prismaError.meta?.modelName === "Lecture";
+}
 
 lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const data = { ...parsed.data } as typeof parsed.data & { slug: string };
-  if (!data.slug) {
-    data.slug = data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+
+  const input = parsed.data;
+  const data = {
+    slug: input.slug && input.slug.length > 0 ? input.slug : generateSlug(input.title),
+    locale: input.locale,
+    type: input.type,
+    title: input.title,
+    subtitle: input.subtitle,
+    summary: input.summary,
+    description: input.description,
+    audience: input.audience,
+    durationLabel: input.durationLabel,
+    highlights: input.highlights,
+    location: input.location,
+    price: input.price ?? null,
+    imageUrl: input.imageUrl ?? null,
+    isActive: input.isActive ?? true,
+    sortOrder: input.sortOrder ?? 0,
+    date: input.type === "SCHEDULED" ? input.date : null,
+    minimumParticipants: input.type === "ON_DEMAND" ? input.minimumParticipants : null,
+  };
+
+  for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt++) {
+    try {
+      const lecture = await lectureService.createLecture(data);
+      res.status(201).json(lecture);
+      return;
+    } catch (error) {
+      if (!isSlugLocaleConflict(error)) throw error;
+      if (attempt === MAX_SLUG_CREATE_ATTEMPTS - 1) {
+        res.status(409).json({ error: "Unable to generate a unique lecture slug" });
+        return;
+      }
+      data.slug = generateSlug(input.title);
+    }
   }
-  const lecture = await lectureService.createLecture(data);
-  res.status(201).json(lecture);
 });
 
-const patchSchema = z.object({
-  slug: z.string().optional(),
-  title: z.string().min(1).optional(),
-  description: richTextSchema.optional(),
-  date: z.coerce.date().optional(),
-  location: z.string().optional(),
-  price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
-  imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
-  isActive: z.boolean().optional(),
-}).strict();
+// ---- PATCH ----
+const patchSchema = z
+  .object({
+    slug: z.string().trim().min(1).optional(),
+    type: z.enum(["SCHEDULED", "ON_DEMAND"]).optional(),
+    title: z.string().trim().min(1).optional(),
+    subtitle: z.string().trim().min(1).optional(),
+    summary: z.string().trim().min(1).optional(),
+    description: richTextSchema.optional(),
+    audience: z.string().trim().min(1).optional(),
+    durationLabel: z.string().trim().min(1).optional(),
+    highlights: highlightsSchema.optional(),
+    date: z.coerce.date().nullable().optional(),
+    location: z.string().trim().min(1).optional(),
+    price: z.preprocess(
+      (v) => (v === "" ? null : v),
+      z.coerce.number().int().min(0).nullable().optional(),
+    ),
+    minimumParticipants: z.coerce.number().int().min(1).nullable().optional(),
+    imageUrl: z.preprocess((v) => (v === "" ? null : v), z.string().url().nullable().optional()),
+    isActive: z.boolean().optional(),
+    sortOrder: z.coerce.number().int().optional(),
+  })
+  .strict();
 
 lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
   const parsed = patchSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const lecture = await lectureService.updateLecture(id, parsed.data);
+
+  const current = await lectureService.getLectureById(id);
+  if (!current) { res.status(404).json({ error: "Not found" }); return; }
+
+  const patch = parsed.data;
+  const effectiveType = patch.type ?? current.type;
+  const effectiveDate = patch.date !== undefined ? patch.date : current.date;
+  const effectiveMinimum =
+    patch.minimumParticipants !== undefined ? patch.minimumParticipants : current.minimumParticipants;
+
+  // Validate the merged object against the type invariants.
+  const fieldErrors: Record<string, string[]> = {};
+  if (effectiveType === "SCHEDULED" && !effectiveDate) {
+    fieldErrors.date = ["A date is required for scheduled lectures"];
+  }
+  if (effectiveType === "ON_DEMAND" && (effectiveMinimum == null || effectiveMinimum < 1)) {
+    fieldErrors.minimumParticipants = ["On-demand lectures require a minimum of at least 1 participant"];
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    res.status(400).json({ error: { formErrors: [], fieldErrors } });
+    return;
+  }
+
+  // Build the update, clearing the field that is irrelevant to the effective type.
+  const data: Record<string, unknown> = {};
+  const assign = <K extends keyof typeof patch>(key: K) => {
+    if (patch[key] !== undefined) data[key as string] = patch[key];
+  };
+  (["slug", "type", "title", "subtitle", "summary", "description", "audience",
+    "durationLabel", "highlights", "location", "price", "imageUrl", "isActive", "sortOrder",
+  ] as const).forEach(assign);
+
+  if (effectiveType === "SCHEDULED") {
+    data.date = effectiveDate;
+    data.minimumParticipants = null;
+  } else {
+    data.date = null;
+    data.minimumParticipants = effectiveMinimum;
+  }
+
+  const lecture = await lectureService.updateLecture(id, data);
   res.json(lecture);
 });
 

@@ -53,19 +53,32 @@ model Comment {
   @@index([postId, isApproved])
 }
 
+enum LectureType {
+  SCHEDULED
+  ON_DEMAND
+}
+
 model Lecture {
-  id          Int       @id @default(autoincrement())
-  slug        String
-  locale      String    @default("he")
-  title       String
-  description String
-  date        DateTime
-  location    String?
-  price       String?
-  imageUrl    String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                  Int         @id @default(autoincrement())
+  slug                String
+  locale              String      @default("he")
+  type                LectureType @default(SCHEDULED)
+  title               String
+  subtitle            String?
+  summary             String?
+  description         String
+  audience            String?
+  durationLabel       String?
+  highlights          String[]    @default([])
+  date                DateTime?
+  location            String?
+  price               Int?
+  minimumParticipants Int?
+  imageUrl            String?
+  isActive            Boolean     @default(true)
+  sortOrder           Int         @default(0)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@unique([slug, locale])
 }

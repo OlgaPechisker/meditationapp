@@ -184,31 +184,55 @@ export async function createLecture(
   token: string,
   data: {
     slug?: string;
+    type?: 'SCHEDULED' | 'ON_DEMAND';
     title?: string;
+    subtitle?: string;
+    summary?: string;
     description?: string;
+    audience?: string;
+    durationLabel?: string;
+    highlights?: string[];
     date?: string;
     location?: string;
-    price?: string;
+    price?: number | string;
+    minimumParticipants?: number;
     locale?: string;
     imageUrl?: string;
     isActive?: boolean;
+    sortOrder?: number;
   } = {}
 ) {
   const slug = data.slug ?? `test-lecture-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  // Default: future date (1 month from now)
+  const type = data.type ?? 'SCHEDULED';
+  // Default scheduled date: one month from now (future so it stays publicly visible).
   const futureDate = new Date();
   futureDate.setMonth(futureDate.getMonth() + 1);
 
   const payload: Record<string, unknown> = {
     slug,
+    type,
     title: data.title ?? `Test Lecture ${slug}`,
+    subtitle: data.subtitle ?? 'Test lecture subtitle',
+    summary: data.summary ?? 'Test lecture summary for e2e tests.',
     description: data.description ?? 'Test lecture description.',
-    date: data.date ?? futureDate.toISOString(),
+    audience: data.audience ?? 'Anyone interested',
+    durationLabel: data.durationLabel ?? '90 minutes',
+    highlights: data.highlights ?? ['First highlight', 'Second highlight'],
     location: data.location ?? 'Test Location',
-    price: data.price ?? '100',
     locale: data.locale ?? 'he',
     imageUrl: data.imageUrl,
+    isActive: data.isActive,
+    sortOrder: data.sortOrder,
   };
+
+  if (type === 'SCHEDULED') {
+    payload.date = data.date ?? futureDate.toISOString();
+    payload.price = data.price ?? 100;
+  } else {
+    payload.minimumParticipants = data.minimumParticipants ?? 8;
+    if (data.price !== undefined) payload.price = data.price;
+  }
+
   const res = await request.post(apiUrl('/api/lectures'), {
     data: payload,
     headers: authHeaders(token),

@@ -1,5 +1,18 @@
 import { adminTest, expect } from '../fixtures/auth.fixture';
 import { getAdminToken, createLecture } from '../fixtures/factory';
+import type { Page } from '@playwright/test';
+
+/** Fills the fields shared by every lecture type (leaves type-specific fields to the caller). */
+async function fillSharedFields(page: Page, title: string) {
+  await page.locator('[data-testid="field-title"]').fill(title);
+  await page.locator('[data-testid="field-subtitle"]').fill('Subtitle text');
+  await page.locator('[data-testid="field-durationLabel"]').fill('90 minutes');
+  await page.locator('[data-testid="field-summary"]').fill('A short summary for the lecture.');
+  await page.locator('[data-testid="field-description"] .ql-editor').fill('Full description body for the lecture.');
+  await page.locator('[data-testid="field-audience"]').fill('Anyone interested');
+  await page.locator('[data-testid="field-highlight-0"]').fill('First highlight');
+  await page.locator('[data-testid="field-location"]').fill('Test Hall');
+}
 
 adminTest.describe('Admin Lectures', () => {
   let token = '';
@@ -8,12 +21,8 @@ adminTest.describe('Admin Lectures', () => {
     token = await getAdminToken(request);
   });
 
-  // No DELETE endpoint for lectures — each test uses unique timestamps in slugs
-
   adminTest('ALEC-P1: /admin/lectures lists all lectures', async ({ page, request }) => {
-    const lecture = await createLecture(request, token, {
-      title: 'ALEC-P1 Lecture',
-    });
+    const lecture = await createLecture(request, token, { title: 'ALEC-P1 Lecture' });
 
     await page.goto('/admin/lectures');
 
@@ -22,10 +31,7 @@ adminTest.describe('Admin Lectures', () => {
     ).toBeVisible();
   });
 
-  adminTest('ALEC-P2: Create lecture with required fields → appears in list', async ({
-    page,
-  }) => {
-    const slug = `alec-p2-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  adminTest('ALEC-P2: Create a scheduled lecture → appears in list', async ({ page }) => {
     const futureDate = new Date();
     futureDate.setMonth(futureDate.getMonth() + 1);
     const dateValue = futureDate.toISOString().slice(0, 16); // datetime-local format
@@ -37,19 +43,42 @@ adminTest.describe('Admin Lectures', () => {
       await expect(page.locator('[data-testid="lecture-form"]')).toBeVisible();
     });
 
-    await page.locator('[data-testid="field-title"]').fill('ALEC-P2 New Lecture');
-    await page.locator('[data-testid="field-description"]').fill('Description for ALEC-P2 lecture.');
+    await fillSharedFields(page, 'ALEC-P2 New Lecture');
     await page.locator('[data-testid="field-date"]').fill(dateValue);
-    await page.locator('[data-testid="field-location"]').fill('Test Hall ALEC-P2');
     await page.locator('[data-testid="field-price"]').fill('100');
     await page.locator('[data-testid="form-save"]').click();
 
-    // The new lecture row should be visible (identified by title text since no slug on row)
     await expect(
       page.locator('[data-testid="lectures-table"]')
         .locator('[data-testid="lecture-title"]', { hasText: 'ALEC-P2 New Lecture' })
         .first(),
     ).toBeVisible();
+  });
+
+  adminTest('ALEC-P2b: Create an on-demand lecture with a minimum and no date', async ({ page }) => {
+    await page.goto('/admin/lectures');
+
+    await adminTest.step('open form', async () => {
+      await page.locator('[data-testid="add-lecture-btn"]').click();
+      await expect(page.locator('[data-testid="lecture-form"]')).toBeVisible();
+    });
+
+    await page.locator('[data-testid="field-type"]').selectOption('ON_DEMAND');
+    // The date field is replaced by a minimum-participants field for on-demand lectures.
+    await expect(page.locator('[data-testid="field-date"]')).toHaveCount(0);
+    await fillSharedFields(page, 'ALEC-P2b On-Demand Lecture');
+    await page.locator('[data-testid="field-minimumParticipants"]').fill('10');
+    // Price intentionally left empty (allowed for on-demand).
+    await page.locator('[data-testid="form-save"]').click();
+
+    const row = page
+      .locator('[data-testid="lecture-row"]')
+      .filter({ has: page.locator('[data-testid="lecture-title"]', { hasText: 'ALEC-P2b On-Demand Lecture' }) })
+      .first();
+    await expect(row).toBeVisible();
+    await expect(row).toHaveAttribute('data-type', 'ON_DEMAND');
+    await expect(row.locator('[data-testid="lecture-min"]')).toContainText('10');
+    await expect(row.locator('[data-testid="lecture-public"]')).toContainText('מוצג');
   });
 
   adminTest('ALEC-P3: Set future date → lecture visible in public /lectures', async ({
@@ -60,6 +89,7 @@ adminTest.describe('Admin Lectures', () => {
     futureDate.setMonth(futureDate.getMonth() + 2);
 
     const lecture = await createLecture(request, token, {
+      type: 'SCHEDULED',
       title: 'ALEC-P3 Future Lecture',
       date: futureDate.toISOString(),
       isActive: true,
@@ -68,48 +98,43 @@ adminTest.describe('Admin Lectures', () => {
     await page.goto('/lectures');
 
     await expect(
-      page.locator('[data-testid="upcoming-section"]')
-        .locator(`[data-testid="lecture-card"][data-id="${lecture.id}"]`),
+      page.locator(`[data-testid="lecture-card"][data-id="${lecture.id}"]`),
     ).toBeVisible();
   });
 
-  adminTest(
-    'ALEC-P4: Set past date → lecture NOT shown on public /lectures upcoming section',
-    async ({ page, request }) => {
-      const pastDate = new Date();
-      pastDate.setMonth(pastDate.getMonth() - 2);
-
-      // Also create a future lecture as anchor to confirm page loaded
-      const futureLecture = await createLecture(request, token, {
-        title: 'ALEC-P4 Anchor Future Lecture',
-      });
-
-      const pastLecture = await createLecture(request, token, {
-        title: 'ALEC-P4 Past Lecture',
-        date: pastDate.toISOString(),
-      });
-
-      await page.goto('/lectures');
-
-      // Wait for page to load — future anchor lecture must be visible
-      await expect(
-        page.locator('[data-testid="upcoming-section"]')
-          .locator(`[data-testid="lecture-card"][data-id="${futureLecture.id}"]`),
-      ).toBeVisible();
-
-      // Past lecture must NOT be in upcoming section
-      await expect(
-        page.locator('[data-testid="upcoming-section"]')
-          .locator(`[data-testid="lecture-card"][data-id="${pastLecture.id}"]`),
-      ).not.toBeVisible();
-    },
-  );
-
-  adminTest('ALEC-P5: Update lecture → public page reflects change', async ({
+  adminTest('ALEC-P4: Set past date → lecture NOT shown on public /lectures', async ({
     page,
     request,
   }) => {
+    const pastDate = new Date();
+    pastDate.setMonth(pastDate.getMonth() - 2);
+
+    // Future anchor lecture to confirm the page loaded.
+    const futureLecture = await createLecture(request, token, {
+      type: 'SCHEDULED',
+      title: 'ALEC-P4 Anchor Future Lecture',
+    });
+
+    const pastLecture = await createLecture(request, token, {
+      type: 'SCHEDULED',
+      title: 'ALEC-P4 Past Lecture',
+      date: pastDate.toISOString(),
+    });
+
+    await page.goto('/lectures');
+
+    await expect(
+      page.locator(`[data-testid="lecture-card"][data-id="${futureLecture.id}"]`),
+    ).toBeVisible();
+
+    await expect(
+      page.locator(`[data-testid="lecture-card"][data-id="${pastLecture.id}"]`),
+    ).toHaveCount(0);
+  });
+
+  adminTest('ALEC-P5: Update lecture → public page reflects change', async ({ page, request }) => {
     const lecture = await createLecture(request, token, {
+      type: 'SCHEDULED',
       title: 'ALEC-P5 Original Title',
     });
     const newTitle = `ALEC-P5 Updated ${Date.now()}`;
@@ -124,14 +149,12 @@ adminTest.describe('Admin Lectures', () => {
     await page.locator('[data-testid="field-title"]').fill(newTitle);
     await page.locator('[data-testid="form-save"]').click();
 
-    // Verify updated in admin list
     await expect(
       page
         .locator(`[data-testid="lecture-row"][data-id="${lecture.id}"]`)
         .locator('[data-testid="lecture-title"]'),
     ).toContainText(newTitle);
 
-    // Verify reflected on public /lectures page
     await page.goto('/lectures');
     await expect(
       page.locator(`[data-testid="lecture-card"][data-id="${lecture.id}"]`)
@@ -139,7 +162,7 @@ adminTest.describe('Admin Lectures', () => {
     ).toContainText(newTitle);
   });
 
-  adminTest('ALEC-N1: Create lecture with no date → validation error shown', async ({ page }) => {
+  adminTest('ALEC-N1: Scheduled lecture with no date → validation error shown', async ({ page }) => {
     await page.goto('/admin/lectures');
 
     await adminTest.step('open form', async () => {
@@ -147,9 +170,28 @@ adminTest.describe('Admin Lectures', () => {
       await expect(page.locator('[data-testid="lecture-form"]')).toBeVisible();
     });
 
-    await page.locator('[data-testid="field-title"]').fill('Lecture Without Date');
-    await page.locator('[data-testid="field-location"]').fill('Some Location');
-    // Leave date empty
+    // Fill every required field except the (scheduled-only) date.
+    await fillSharedFields(page, 'Scheduled Without Date');
+    await page.locator('[data-testid="field-price"]').fill('100');
+    // Leave the date empty.
+    await page.locator('[data-testid="form-save"]').click();
+
+    await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
+  });
+
+  adminTest('ALEC-N1b: On-demand lecture with no minimum → validation error shown', async ({
+    page,
+  }) => {
+    await page.goto('/admin/lectures');
+
+    await adminTest.step('open form', async () => {
+      await page.locator('[data-testid="add-lecture-btn"]').click();
+      await expect(page.locator('[data-testid="lecture-form"]')).toBeVisible();
+    });
+
+    await page.locator('[data-testid="field-type"]').selectOption('ON_DEMAND');
+    await fillSharedFields(page, 'On-Demand Without Minimum');
+    // Leave minimumParticipants empty.
     await page.locator('[data-testid="form-save"]').click();
 
     await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
@@ -178,5 +220,19 @@ adminTest.describe('Admin Lectures', () => {
     ]);
 
     await expect(page.locator('[data-testid="field-imageUrl"] .upload-error')).toBeVisible();
+  });
+
+  adminTest('ALEC-D1: Delete lecture → removed from list', async ({ page, request }) => {
+    const lecture = await createLecture(request, token, { title: 'ALEC-D1 To Delete' });
+
+    await page.goto('/admin/lectures');
+    const row = page.locator(`[data-testid="lecture-row"][data-id="${lecture.id}"]`);
+    await expect(row).toBeVisible();
+
+    await row.locator('[data-testid="lecture-delete-btn"]').click();
+
+    await expect(
+      page.locator(`[data-testid="lecture-row"][data-id="${lecture.id}"]`),
+    ).toHaveCount(0);
   });
 });
