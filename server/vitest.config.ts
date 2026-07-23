@@ -9,8 +9,14 @@ export default defineConfig({
   test: {
     env: {
       DATABASE_URL: databaseUrl,
-      JWT_SECRET: "dev-secret-change-me",
+      JWT_SECRET: "test-only-jwt-secret-that-is-at-least-32-characters",
+      JWT_ISSUER: "einat-test-suite",
+      JWT_AUDIENCE: "einat-test-admin",
       ADMIN_PASSWORD: "test-password",
+      ALLOWED_ORIGINS: "https://allowed.test.example",
+      RATE_LIMIT_MAX_BUCKETS: "100",
+      UPLOAD_DIR: "./uploads-test",
+      BASE_URL: "http://localhost:3000",
       PORT: "3000",
     },
   },
