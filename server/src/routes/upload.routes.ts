@@ -4,6 +4,7 @@ import { extname } from "node:path";
 import { requireAuth } from "../middleware/auth.js";
 import { storageProvider } from "../services/storage/index.js";
 import { uploadConfig } from "../config.js";
+import { ValidationError } from "../errors/application-error.js";
 
 export const uploadRoutes = Router();
 
@@ -16,7 +17,7 @@ const upload = multer({
     if (ALLOWED_MIMETYPES.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed (jpeg, png, webp, gif)"));
+      cb(new ValidationError("Only image files are allowed (jpeg, png, webp, gif)"));
     }
   },
 });
@@ -27,8 +28,7 @@ uploadRoutes.post(
   upload.single("file"),
   async (req: Request, res: Response) => {
     if (!req.file) {
-      res.status(400).json({ error: "No file provided" });
-      return;
+      throw new ValidationError("No file provided");
     }
 
     const ext = extname(req.file.originalname).toLowerCase() || ".jpg";

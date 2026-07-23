@@ -4,12 +4,13 @@ import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rate-limit.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as commentService from "../services/comments.service.js";
+import { ValidationError } from "../errors/application-error.js";
 
 export const commentRoutes = Router();
 
 commentRoutes.get("/post/:postId", async (req: Request, res: Response) => {
   const postId = parseInt(req.params.postId as string);
-  if (isNaN(postId)) { res.status(400).json({ error: "Invalid post ID" }); return; }
+  if (isNaN(postId)) throw new ValidationError("Invalid post ID");
   const pagination = paginationSchema.parse(req.query);
   const result = await commentService.listApprovedComments(postId, pagination);
   res.json(result);
@@ -29,18 +30,14 @@ commentRoutes.post("/",
   },
   rateLimit(3, 15 * 60 * 1000),
   async (req: Request, res: Response) => {
-    const parsed = createCommentSchema.safeParse(req.body);
-    if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-    const { honeypot: _hp, ...data } = parsed.data;
+    const { honeypot: _hp, ...data } = createCommentSchema.parse(req.body);
     const comment = await commentService.createComment(data);
     res.status(201).json(comment);
   }
 );
 
 commentRoutes.post("/admin/create", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createCommentSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const { honeypot, ...data } = parsed.data;
+  const { honeypot, ...data } = createCommentSchema.parse(req.body);
   if (honeypot && honeypot.length > 0) { res.status(201).json({ message: "Comment submitted" }); return; }
   const comment = await commentService.createComment(data);
   res.status(201).json(comment);
@@ -54,14 +51,14 @@ commentRoutes.get("/admin/pending", requireAuth, async (req: Request, res: Respo
 
 commentRoutes.patch("/:id/approve", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   const comment = await commentService.approveComment(id);
   res.json(comment);
 });
 
 commentRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await commentService.deleteComment(id);
   res.status(204).end();
 });

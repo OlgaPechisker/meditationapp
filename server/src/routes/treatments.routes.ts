@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as treatmentService from "../services/treatments.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
+import { NotFoundError, ValidationError } from "../errors/application-error.js";
 
 export const treatmentRoutes = Router();
 
@@ -21,7 +22,7 @@ treatmentRoutes.get("/admin/all", requireAuth, async (req: Request, res: Respons
 
 treatmentRoutes.get("/:slug", async (req: Request, res: Response) => {
   const treatment = await treatmentService.getTreatmentBySlug(req.params.slug as string, req.locale);
-  if (!treatment) { res.status(404).json({ error: "Not found" }); return; }
+  if (!treatment) throw new NotFoundError();
   res.json(treatment);
 });
 
@@ -34,9 +35,7 @@ const createSchema = z.object({
 }).strict();
 
 treatmentRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const treatment = await treatmentService.createTreatment(parsed.data);
+  const treatment = await treatmentService.createTreatment(createSchema.parse(req.body));
   res.status(201).json(treatment);
 });
 
@@ -53,16 +52,14 @@ const patchSchema = z.object({
 
 treatmentRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const treatment = await treatmentService.updateTreatment(id, parsed.data);
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
+  const treatment = await treatmentService.updateTreatment(id, patchSchema.parse(req.body));
   res.json(treatment);
 });
 
 treatmentRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await treatmentService.deleteTreatment(id);
   res.status(204).end();
 });

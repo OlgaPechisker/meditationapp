@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as contentService from "../services/content.service.js";
 import { validateRichText } from "../utils/rich-text.js";
+import { NotFoundError } from "../errors/application-error.js";
 
 export const contentRoutes = Router();
 
@@ -20,7 +21,7 @@ contentRoutes.get("/", async (req: Request, res: Response) => {
 
 contentRoutes.get("/:key", async (req: Request, res: Response) => {
   const content = await contentService.getContent(req.params.key as string, req.locale);
-  if (!content) { res.status(404).json({ error: "Not found" }); return; }
+  if (!content) throw new NotFoundError();
   res.json(content);
 });
 
@@ -31,17 +32,11 @@ const upsertSchema = z.object({
 }).strict();
 
 contentRoutes.put("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = upsertSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  let value = parsed.data.value;
-  if (parsed.data.key === "about") {
-    try {
-      value = validateRichText(value);
-    } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "Invalid rich text" });
-      return;
-    }
+  const parsed = upsertSchema.parse(req.body);
+  let value = parsed.value;
+  if (parsed.key === "about") {
+    value = validateRichText(value);
   }
-  const content = await contentService.upsertContent(parsed.data.key, parsed.data.locale, value);
+  const content = await contentService.upsertContent(parsed.key, parsed.locale, value);
   res.json(content);
 });

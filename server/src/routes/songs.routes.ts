@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as songService from "../services/songs.service.js";
+import { ValidationError } from "../errors/application-error.js";
 
 export const songRoutes = Router();
 
@@ -25,9 +26,7 @@ const createSchema = z.object({
 });
 
 songRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const song = await songService.createSong(parsed.data);
+  const song = await songService.createSong(createSchema.parse(req.body));
   res.status(201).json(song);
 });
 
@@ -38,16 +37,14 @@ const patchSchema = z.object({
 
 songRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const song = await songService.updateSong(id, parsed.data);
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
+  const song = await songService.updateSong(id, patchSchema.parse(req.body));
   res.json(song);
 });
 
 songRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await songService.deleteSong(id);
   res.status(204).end();
 });

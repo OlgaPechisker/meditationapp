@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { RateLimitedError } from "../errors/application-error.js";
 
 const store = new Map<string, { count: number; resetAt: number }>();
 
@@ -21,7 +22,7 @@ export function rateLimit(maxRequests: number, windowMs: number) {
     }
 
     if (entry.count >= maxRequests) {
-      res.status(429).json({ error: "Too many requests" });
+      next(new RateLimitedError());
       return;
     }
 

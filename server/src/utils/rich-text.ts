@@ -1,5 +1,6 @@
 import sanitizeHtml from "sanitize-html";
 import { z } from "zod";
+import { ValidationError } from "../errors/application-error.js";
 
 const MAX_RICH_TEXT_LENGTH = 100_000;
 const allowedClasses = [
@@ -95,12 +96,12 @@ export function sanitizeRichText(value: string): string {
 
 export function validateRichText(value: string): string {
   if (value.length > MAX_RICH_TEXT_LENGTH) {
-    throw new Error(`Rich text must not exceed ${MAX_RICH_TEXT_LENGTH} characters`);
+    throw new ValidationError(`Rich text must not exceed ${MAX_RICH_TEXT_LENGTH} characters`);
   }
 
   const sanitized = sanitizeRichText(value);
   if (!isMeaningful(sanitized)) {
-    throw new Error("Rich text must contain visible content");
+    throw new ValidationError("Rich text must contain visible content");
   }
   return sanitized;
 }

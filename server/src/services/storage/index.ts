@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { IStorageProvider } from "./storage.interface.js";
 import { LocalStorageProvider } from "./local.provider.js";
 import { uploadConfig } from "../../config.js";
+import { ConfigurationError } from "../../errors/configuration-error.js";
 
 function createStorageProvider(): IStorageProvider {
   const provider = uploadConfig.STORAGE_PROVIDER;
@@ -12,7 +13,7 @@ function createStorageProvider(): IStorageProvider {
   }
 
   // Future: add "s3" | "azure" cases here
-  throw new Error(`Unknown STORAGE_PROVIDER: "${provider}". Supported values: "local"`);
+  throw new ConfigurationError(["STORAGE_PROVIDER"]);
 }
 
 export const storageProvider: IStorageProvider = createStorageProvider();

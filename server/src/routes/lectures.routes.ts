@@ -5,6 +5,7 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as lectureService from "../services/lectures.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { generateSlug } from "../utils/slug.js";
+import { ConflictError, NotFoundError, ValidationError } from "../errors/application-error.js";
 
 export const lectureRoutes = Router();
 
@@ -22,7 +23,7 @@ lectureRoutes.get("/admin/all", requireAuth, async (req: Request, res: Response)
 
 lectureRoutes.get("/:slug", async (req: Request, res: Response) => {
   const lecture = await lectureService.getLectureBySlug(req.params.slug as string, req.locale);
-  if (!lecture) { res.status(404).json({ error: "Not found" }); return; }
+  if (!lecture) throw new NotFoundError();
   res.json(lecture);
 });
 
@@ -109,10 +110,7 @@ function isSlugLocaleConflict(error: unknown): boolean {
 }
 
 lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-
-  const input = parsed.data;
+  const input = createSchema.parse(req.body);
   const data = {
     slug: input.slug && input.slug.length > 0 ? input.slug : generateSlug(input.title),
     locale: input.locale,
@@ -141,8 +139,7 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
     } catch (error) {
       if (!isSlugLocaleConflict(error)) throw error;
       if (attempt === MAX_SLUG_CREATE_ATTEMPTS - 1) {
-        res.status(409).json({ error: "Unable to generate a unique lecture slug" });
-        return;
+        throw new ConflictError("Unable to generate a unique lecture slug");
       }
       data.slug = generateSlug(input.title);
     }
@@ -176,15 +173,13 @@ const patchSchema = z
 
 lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
 
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+  const patch = patchSchema.parse(req.body);
 
   const current = await lectureService.getLectureById(id);
-  if (!current) { res.status(404).json({ error: "Not found" }); return; }
+  if (!current) throw new NotFoundError();
 
-  const patch = parsed.data;
   const effectiveType = patch.type ?? current.type;
   const effectiveDate = patch.date !== undefined ? patch.date : current.date;
   const effectiveMinimum =
@@ -199,8 +194,7 @@ lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => 
     fieldErrors.minimumParticipants = ["On-demand lectures require a minimum of at least 1 participant"];
   }
   if (Object.keys(fieldErrors).length > 0) {
-    res.status(400).json({ error: { formErrors: [], fieldErrors } });
-    return;
+    throw new ValidationError("Invalid lecture", { fields: fieldErrors });
   }
 
   // Build the update, clearing the field that is irrelevant to the effective type.
@@ -226,7 +220,7 @@ lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => 
 
 lectureRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await lectureService.deleteLecture(id);
   res.status(204).end();
 });

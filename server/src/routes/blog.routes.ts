@@ -5,6 +5,7 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as blogService from "../services/blog.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { youTubeUrlSchema } from "../utils/video.js";
+import { NotFoundError, ValidationError } from "../errors/application-error.js";
 
 export const blogRoutes = Router();
 
@@ -13,9 +14,7 @@ const blogListQuerySchema = paginationSchema.extend({
 });
 
 blogRoutes.get("/", async (req: Request, res: Response) => {
-  const parsed = blogListQuerySchema.safeParse(req.query);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const result = await blogService.listPublishedPosts(req.locale, parsed.data);
+  const result = await blogService.listPublishedPosts(req.locale, blogListQuerySchema.parse(req.query));
   res.json(result);
 });
 
@@ -27,7 +26,7 @@ blogRoutes.get("/admin/all", requireAuth, async (req: Request, res: Response) =>
 
 blogRoutes.get("/:slug", async (req: Request, res: Response) => {
   const post = await blogService.getPostBySlug(req.params.slug as string, req.locale);
-  if (!post) { res.status(404).json({ error: "Not found" }); return; }
+  if (!post) throw new NotFoundError();
   res.json(post);
 });
 
@@ -49,24 +48,20 @@ const patchSchema = z.object({
 }).strict();
 
 blogRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const post = await blogService.createPost(parsed.data);
+  const post = await blogService.createPost(createSchema.parse(req.body));
   res.status(201).json(post);
 });
 
 blogRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const post = await blogService.updatePost(id, parsed.data);
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
+  const post = await blogService.updatePost(id, patchSchema.parse(req.body));
   res.json(post);
 });
 
 blogRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await blogService.softDeletePost(id);
   res.status(204).end();
 });

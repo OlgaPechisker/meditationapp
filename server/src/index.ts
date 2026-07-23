@@ -6,6 +6,9 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { localeMiddleware } from "./middleware/locale.js";
 import { requireAuth } from "./middleware/auth.js";
 import { clearRateLimitStore } from "./middleware/rate-limit.js";
+import { requestIdMiddleware } from "./middleware/request-id.js";
+import { requestLogger, logger } from "./middleware/logger.js";
+import { routeContext } from "./middleware/route-context.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { treatmentRoutes } from "./routes/treatments.routes.js";
 import { blogRoutes } from "./routes/blog.routes.js";
@@ -17,6 +20,8 @@ import { uploadRoutes } from "./routes/upload.routes.js";
 
 const app = express();
 
+app.use(requestIdMiddleware);
+app.use(requestLogger);
 app.use(cors());
 app.use(express.json());
 app.use(localeMiddleware);
@@ -29,14 +34,14 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/treatments", treatmentRoutes);
-app.use("/api/blog", blogRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/lectures", lectureRoutes);
-app.use("/api/songs", songRoutes);
-app.use("/api/content", contentRoutes);
-app.use("/api/upload", uploadRoutes);
+app.use("/api/auth", routeContext("/api/auth"), authRoutes);
+app.use("/api/treatments", routeContext("/api/treatments"), treatmentRoutes);
+app.use("/api/blog", routeContext("/api/blog"), blogRoutes);
+app.use("/api/comments", routeContext("/api/comments"), commentRoutes);
+app.use("/api/lectures", routeContext("/api/lectures"), lectureRoutes);
+app.use("/api/songs", routeContext("/api/songs"), songRoutes);
+app.use("/api/content", routeContext("/api/content"), contentRoutes);
+app.use("/api/upload", routeContext("/api/upload"), uploadRoutes);
 
 if (process.env.NODE_ENV !== "production") {
   app.delete("/api/_test/rate-limit", requireAuth, (_req, res) => {
@@ -49,7 +54,7 @@ app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "test") {
   app.listen(config.PORT, () => {
-    console.log(`Server running on port ${config.PORT}`);
+    logger.info({ port: config.PORT }, "server listening");
   });
 }
 
