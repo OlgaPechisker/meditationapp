@@ -11,6 +11,7 @@ import {
   localeSchema,
   slugSchema,
 } from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const treatmentRoutes = Router();
 
@@ -42,6 +43,11 @@ const createSchema = z.object({
 
 treatmentRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const treatment = await treatmentService.createTreatment(createSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "create",
+    resourceType: "treatment",
+    resourceId: String(treatment.id),
+  });
   res.status(201).json(treatment);
 });
 
@@ -60,6 +66,11 @@ treatmentRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) =
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   const treatment = await treatmentService.updateTreatment(id, patchSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "treatment",
+    resourceId: String(treatment.id),
+  });
   res.json(treatment);
 });
 
@@ -67,5 +78,10 @@ treatmentRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) 
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   await treatmentService.deleteTreatment(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "treatment",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

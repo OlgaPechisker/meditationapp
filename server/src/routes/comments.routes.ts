@@ -6,6 +6,7 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as commentService from "../services/comments.service.js";
 import { ValidationError } from "../errors/application-error.js";
 import { boundedPlainTextSchema } from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const commentRoutes = Router();
 
@@ -41,6 +42,11 @@ commentRoutes.post("/admin/create", requireAuth, async (req: Request, res: Respo
   const { honeypot, ...data } = createCommentSchema.parse(req.body);
   if (honeypot && honeypot.length > 0) { res.status(201).json({ message: "Comment submitted" }); return; }
   const comment = await commentService.createComment(data);
+  emitAdminMutation(req, {
+    action: "create",
+    resourceType: "comment",
+    resourceId: String(comment.id),
+  });
   res.status(201).json(comment);
 });
 
@@ -54,6 +60,11 @@ commentRoutes.patch("/:id/approve", requireAuth, async (req: Request, res: Respo
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   const comment = await commentService.approveComment(id);
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "comment",
+    resourceId: String(comment.id),
+  });
   res.json(comment);
 });
 
@@ -61,5 +72,10 @@ commentRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) =>
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   await commentService.deleteComment(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "comment",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

@@ -6,10 +6,12 @@ import {
   ConflictError,
   NotFoundError,
   PayloadTooLargeError,
+  UploadValidationError,
   ValidationError,
   validationErrorFromZod,
 } from "../errors/application-error.js";
 import { logger } from "./logger.js";
+import { emitRejectedUpload } from "./security-events.js";
 
 function classifyError(error: unknown): ApplicationError | undefined {
   if (error instanceof ApplicationError) {
@@ -52,6 +54,9 @@ export function errorHandler(error: unknown, req: Request, res: Response, next: 
   const applicationError = classifyError(error);
 
   if (applicationError) {
+    if (error instanceof UploadValidationError || error instanceof multer.MulterError) {
+      emitRejectedUpload(req);
+    }
     logger.warn({
       err: { name: applicationError.name, code: applicationError.code },
       requestId: req.requestId,

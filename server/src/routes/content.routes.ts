@@ -9,6 +9,7 @@ import {
 } from "../utils/site-content.js";
 import { localeSchema } from "../utils/content-contracts.js";
 import { NotFoundError } from "../errors/application-error.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const contentRoutes = Router();
 
@@ -41,5 +42,10 @@ contentRoutes.put("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = upsertSchema.parse(req.body);
   const value = validateSiteContentValue(parsed.key, parsed.value);
   const content = await contentService.upsertContent(parsed.key, parsed.locale, value);
+  emitAdminMutation(req, {
+    action: "upsert",
+    resourceType: "site_content",
+    resourceId: `${content.key}:${content.locale}`,
+  });
   res.json(content);
 });

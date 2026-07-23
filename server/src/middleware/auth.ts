@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config.js";
 import { UnauthorizedError } from "../errors/application-error.js";
+import { emitRejectedToken } from "./security-events.js";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
@@ -23,6 +24,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     req.actor = { type: "admin" };
     next();
   } catch {
+    emitRejectedToken(req);
     next(new UnauthorizedError());
   }
 }

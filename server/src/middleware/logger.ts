@@ -49,12 +49,12 @@ const httpLogger = pinoHttp({
 
 export const logger = httpLogger.logger;
 
-function normalizedRoute(req: Request): string {
+export function normalizedRoute(req: Request): string {
   if (req.route?.path) {
     return `${req.routeBase ?? req.baseUrl}${req.route.path}`;
   }
 
-  return "<unmatched>";
+  return req.routeBase ?? "<unmatched>";
 }
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {

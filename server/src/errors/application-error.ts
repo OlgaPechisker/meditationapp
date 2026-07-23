@@ -32,6 +32,13 @@ export class ValidationError extends ApplicationError {
   }
 }
 
+export class UploadValidationError extends ValidationError {
+  constructor() {
+    super("Invalid upload");
+    this.name = "UploadValidationError";
+  }
+}
+
 export class NotFoundError extends ApplicationError {
   constructor(message = "Resource not found") {
     super("NOT_FOUND", 404, message);

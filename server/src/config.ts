@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { ConfigurationError } from "./errors/configuration-error.js";
+import { emitConfigurationFailure } from "./middleware/security-events.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: resolve(currentDir, "../.env") });
@@ -12,6 +13,11 @@ loadEnv({ path: resolve(currentDir, "../../.env") });
 const bcryptHashPattern = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 const knownDevelopmentPasswords = ["admin123", "test-password", "password"];
 
+function failConfiguration(fields: string[]): never {
+  emitConfigurationFailure(fields);
+  throw new ConfigurationError(fields);
+}
+
 function parseAllowedOrigins(value: string): string[] {
   const origins = new Set<string>();
 
@@ -19,7 +25,7 @@ function parseAllowedOrigins(value: string): string[] {
     const origin = configuredOrigin.trim();
 
     if (!origin) {
-      throw new ConfigurationError(["ALLOWED_ORIGINS"]);
+      failConfiguration(["ALLOWED_ORIGINS"]);
     }
 
     try {
@@ -41,7 +47,7 @@ function parseAllowedOrigins(value: string): string[] {
 
       origins.add(url.origin);
     } catch {
-      throw new ConfigurationError(["ALLOWED_ORIGINS"]);
+      failConfiguration(["ALLOWED_ORIGINS"]);
     }
   }
 
@@ -111,7 +117,7 @@ const envSchema = z.object({
 
 const environment = envSchema.safeParse(process.env);
 if (!environment.success) {
-  throw new ConfigurationError(
+  failConfiguration(
     [...new Set(environment.error.issues.map((issue) => issue.path.map(String).join(".") || "environment"))],
   );
 }

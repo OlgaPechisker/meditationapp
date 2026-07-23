@@ -12,6 +12,7 @@ import {
   localeSchema,
   slugSchema,
 } from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const lectureRoutes = Router();
 
@@ -140,6 +141,11 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt++) {
     try {
       const lecture = await lectureService.createLecture(data);
+      emitAdminMutation(req, {
+        action: "create",
+        resourceType: "lecture",
+        resourceId: String(lecture.id),
+      });
       res.status(201).json(lecture);
       return;
     } catch (error) {
@@ -221,6 +227,11 @@ lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => 
   }
 
   const lecture = await lectureService.updateLecture(id, data);
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "lecture",
+    resourceId: String(lecture.id),
+  });
   res.json(lecture);
 });
 
@@ -228,5 +239,10 @@ lectureRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) =>
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   await lectureService.deleteLecture(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "lecture",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

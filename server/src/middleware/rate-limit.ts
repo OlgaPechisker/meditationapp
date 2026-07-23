@@ -7,6 +7,10 @@ interface RateLimitBucket {
   resetAt: number;
 }
 
+interface RateLimitOptions {
+  onRateLimited?: (req: Request) => void;
+}
+
 // The global cap preserves active buckets across namespaces; new keys are rejected when full.
 const store = new Map<string, RateLimitBucket>();
 
@@ -61,7 +65,12 @@ function setRateLimitHeaders(
   return resetInSeconds;
 }
 
-export function rateLimit(identity: string, maxRequests: number, windowMs: number): RequestHandler {
+export function rateLimit(
+  identity: string,
+  maxRequests: number,
+  windowMs: number,
+  options: RateLimitOptions = {},
+): RequestHandler {
   if (!identity.trim()) {
     throw new Error("Rate limit identity must not be empty");
   }
@@ -86,6 +95,7 @@ export function rateLimit(identity: string, maxRequests: number, windowMs: numbe
         const resetAt = earliestResetAt() ?? now + windowMs;
         const retryAfter = setRateLimitHeaders(res, maxRequests, 0, resetAt, windowMs, now);
         res.set("Retry-After", String(retryAfter));
+        options.onRateLimited?.(req);
         next(new RateLimitedError());
         return;
       }
@@ -100,6 +110,7 @@ export function rateLimit(identity: string, maxRequests: number, windowMs: numbe
     if (entry.count >= maxRequests) {
       const retryAfter = setRateLimitHeaders(res, maxRequests, 0, entry.resetAt, windowMs, now);
       res.set("Retry-After", String(retryAfter));
+      options.onRateLimited?.(req);
       next(new RateLimitedError());
       return;
     }

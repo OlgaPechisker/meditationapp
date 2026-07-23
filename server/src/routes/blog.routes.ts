@@ -12,6 +12,7 @@ import {
   localeSchema,
   slugSchema,
 } from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const blogRoutes = Router();
 
@@ -55,6 +56,11 @@ const patchSchema = z.object({
 
 blogRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const post = await blogService.createPost(createSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "create",
+    resourceType: "blog_post",
+    resourceId: String(post.id),
+  });
   res.status(201).json(post);
 });
 
@@ -62,6 +68,11 @@ blogRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   const post = await blogService.updatePost(id, patchSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "blog_post",
+    resourceId: String(post.id),
+  });
   res.json(post);
 });
 
@@ -69,5 +80,10 @@ blogRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   await blogService.softDeletePost(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "blog_post",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

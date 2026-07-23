@@ -5,6 +5,7 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as songService from "../services/songs.service.js";
 import { ValidationError } from "../errors/application-error.js";
 import { httpUrlSchema, localeSchema } from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const songRoutes = Router();
 
@@ -28,6 +29,11 @@ const createSchema = z.object({
 
 songRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   const song = await songService.createSong(createSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "create",
+    resourceType: "song",
+    resourceId: String(song.id),
+  });
   res.status(201).json(song);
 });
 
@@ -40,6 +46,11 @@ songRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   const song = await songService.updateSong(id, patchSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "song",
+    resourceId: String(song.id),
+  });
   res.json(song);
 });
 
@@ -47,5 +58,10 @@ songRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) throw new ValidationError("Invalid ID");
   await songService.deleteSong(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "song",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });
