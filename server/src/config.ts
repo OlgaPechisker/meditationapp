@@ -59,7 +59,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   STORAGE_PROVIDER: z.enum(["local"]).default("local"),
   UPLOAD_DIR: z.string().min(1).default("./uploads"),
-  MAX_FILE_SIZE_MB: z.coerce.number().positive().finite().default(5),
+  MAX_FILE_SIZE_MB: z.coerce.number().int().min(1).max(25).default(5),
   RATE_LIMIT_MAX_BUCKETS: z.coerce.number().int().min(1).max(100_000).default(10_000),
   BASE_URL: z.url().default("http://localhost:3000"),
   ALLOWED_ORIGINS: z.string().trim().min(1).optional(),
@@ -139,5 +139,6 @@ export const uploadConfig = {
   STORAGE_PROVIDER: parsedEnv.STORAGE_PROVIDER,
   UPLOAD_DIR: parsedEnv.UPLOAD_DIR,
   MAX_FILE_SIZE_MB: parsedEnv.MAX_FILE_SIZE_MB,
+  MAX_FILE_SIZE_BYTES: parsedEnv.MAX_FILE_SIZE_MB * 1024 * 1024,
   BASE_URL: parsedEnv.BASE_URL,
 };

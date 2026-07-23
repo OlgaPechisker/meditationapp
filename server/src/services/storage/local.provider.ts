@@ -1,18 +1,23 @@
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, basename } from "node:path";
-import { IStorageProvider } from "./storage.interface.js";
+import { IStorageProvider, StorageUpload } from "./storage.interface.js";
+import { isServerOwnedImageFilename } from "../../utils/verified-image.js";
 
 export class LocalStorageProvider implements IStorageProvider {
   constructor(private uploadDir: string, private baseUrl: string) {}
 
-  async upload(buffer: Buffer, filename: string, _mimetype: string): Promise<string> {
+  async upload(buffer: Buffer, file: StorageUpload): Promise<string> {
+    if (!isServerOwnedImageFilename(file.filename, file.contentType)) {
+      throw new Error("Invalid storage filename");
+    }
+
     if (!existsSync(this.uploadDir)) {
       await mkdir(this.uploadDir, { recursive: true });
     }
-    const dest = join(this.uploadDir, filename);
+    const dest = join(this.uploadDir, file.filename);
     await writeFile(dest, buffer);
-    return `${this.baseUrl}/uploads/${filename}`;
+    return `${this.baseUrl}/uploads/${file.filename}`;
   }
 
   async delete(url: string): Promise<void> {
@@ -20,8 +25,11 @@ export class LocalStorageProvider implements IStorageProvider {
     const filePath = join(this.uploadDir, filename);
     try {
       await unlink(filePath);
-    } catch {
-      // file already gone — no-op
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+        return;
+      }
+      throw error;
     }
   }
 }

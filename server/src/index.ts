@@ -10,6 +10,7 @@ import { clearRateLimitStore } from "./middleware/rate-limit.js";
 import { requestIdMiddleware } from "./middleware/request-id.js";
 import { requestLogger, logger } from "./middleware/logger.js";
 import { routeContext } from "./middleware/route-context.js";
+import { serveVerifiedLocalUploads } from "./middleware/verified-local-upload.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { treatmentRoutes } from "./routes/treatments.routes.js";
 import { blogRoutes } from "./routes/blog.routes.js";
@@ -45,7 +46,10 @@ app.use(express.json());
 app.use(localeMiddleware);
 
 if (uploadConfig.STORAGE_PROVIDER === "local") {
-  app.use("/uploads", express.static(resolve(uploadConfig.UPLOAD_DIR)));
+  app.use(
+    "/uploads",
+    serveVerifiedLocalUploads(resolve(uploadConfig.UPLOAD_DIR), uploadConfig.MAX_FILE_SIZE_BYTES),
+  );
 }
 
 app.get("/api/health", (_req, res) => {

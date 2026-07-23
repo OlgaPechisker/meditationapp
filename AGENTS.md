@@ -68,6 +68,7 @@ Copy the root `.env.example` to `.env` and adjust:
 | `HTTPS_TERMINATION` | `false` | Set `true` only when production HTTPS is guaranteed by trusted infrastructure |
 | `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum active in-memory rate-limit buckets |
 | `STORAGE_PROVIDER` | `local` | `local` \| `s3` \| `azure` |
+| `MAX_FILE_SIZE_MB` | `5` | Whole-number image-upload limit in MB; range `1`–`25` |
 | `BASE_URL` | `http://localhost:3000` | Used to build public image URLs |
 
 `ALLOWED_ORIGINS` is a comma-separated allowlist for browser CORS requests.
@@ -103,6 +104,21 @@ newly issued tokens remain valid for at most two hours.
 Rate-limit buckets are in-memory and apply only within one application instance.
 Before horizontally scaling the API, replace the in-memory limiter store with a
 shared external store so limits remain consistent across instances.
+
+## Image upload deployment
+
+The API accepts only structurally valid, magic-byte-verified JPEG, PNG, WebP, and
+GIF uploads. Client file names and declared MIME types are untrusted; the declared
+type must match the inspected image bytes. URLs use a server-generated UUID and
+the inspected extension.
+
+For production, expose `/uploads` through a dedicated cookieless **same-site**
+asset hostname (for example, `https://assets.example.com`) and set `BASE_URL` to
+that origin. The reverse proxy must route that path to the application or approved
+asset storage without attaching application cookies. Do not set authentication
+cookies with a parent-domain `Domain` attribute that includes the asset hostname.
+Upload responses use `Cross-Origin-Resource-Policy: same-site`, so the frontend
+and asset hostname must share the same scheme and registrable domain.
 
 ## E2E Tests
 
