@@ -6,6 +6,12 @@ import * as lectureService from "../services/lectures.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { generateSlug } from "../utils/slug.js";
 import { ConflictError, NotFoundError, ValidationError } from "../errors/application-error.js";
+import {
+  boundedPlainTextSchema,
+  httpUrlSchema,
+  localeSchema,
+  slugSchema,
+} from "../utils/content-contracts.js";
 
 export const lectureRoutes = Router();
 
@@ -32,28 +38,28 @@ const priceSchema = z.preprocess(
   (v) => (v === "" || v == null ? undefined : v),
   z.coerce.number().int().min(0).optional(),
 );
-const imageUrlSchema = z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional());
-const highlightsSchema = z.array(z.string().trim().min(1));
-const optionalTextSchema = z.preprocess(
+const imageUrlSchema = z.preprocess((v) => (v === "" ? undefined : v), httpUrlSchema.optional());
+const highlightsSchema = z.array(boundedPlainTextSchema(1_000, { trim: true })).max(100);
+const optionalTextSchema = (maximumLength: number) => z.preprocess(
   (v) => (v === "" ? undefined : v),
-  z.string().trim().min(1).optional(),
+  boundedPlainTextSchema(maximumLength, { trim: true }).optional(),
 );
-const optionalNullableTextSchema = z.preprocess(
+const optionalNullableTextSchema = (maximumLength: number) => z.preprocess(
   (v) => (v === "" ? null : v),
-  z.string().trim().min(1).nullable().optional(),
+  boundedPlainTextSchema(maximumLength, { trim: true }).nullable().optional(),
 );
 
 const sharedCreateFields = {
-  slug: z.string().trim().optional(),
-  locale: z.string().default("he"),
-  title: z.string().trim().min(1),
-  subtitle: optionalTextSchema,
-  summary: optionalTextSchema,
+  slug: boundedPlainTextSchema(200, { minLength: 0, trim: true }).optional(),
+  locale: localeSchema.default("he"),
+  title: boundedPlainTextSchema(500, { trim: true }),
+  subtitle: optionalTextSchema(1_000),
+  summary: optionalTextSchema(5_000),
   description: richTextSchema,
-  audience: optionalTextSchema,
-  durationLabel: optionalTextSchema,
+  audience: optionalTextSchema(1_000),
+  durationLabel: optionalTextSchema(200),
   highlights: highlightsSchema.optional(),
-  location: z.string().trim().min(1),
+  location: boundedPlainTextSchema(500, { trim: true }),
   price: priceSchema,
   imageUrl: imageUrlSchema,
   isActive: z.boolean().optional(),
@@ -149,23 +155,23 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---- PATCH ----
 const patchSchema = z
   .object({
-    slug: z.string().trim().min(1).optional(),
+    slug: slugSchema.optional(),
     type: z.enum(["SCHEDULED", "ON_DEMAND"]).optional(),
-    title: z.string().trim().min(1).optional(),
-    subtitle: optionalNullableTextSchema,
-    summary: optionalNullableTextSchema,
+    title: boundedPlainTextSchema(500, { trim: true }).optional(),
+    subtitle: optionalNullableTextSchema(1_000),
+    summary: optionalNullableTextSchema(5_000),
     description: richTextSchema.optional(),
-    audience: optionalNullableTextSchema,
-    durationLabel: optionalNullableTextSchema,
+    audience: optionalNullableTextSchema(1_000),
+    durationLabel: optionalNullableTextSchema(200),
     highlights: highlightsSchema.optional(),
     date: z.coerce.date().nullable().optional(),
-    location: z.string().trim().min(1).optional(),
+    location: boundedPlainTextSchema(500, { trim: true }).optional(),
     price: z.preprocess(
       (v) => (v === "" ? null : v),
       z.coerce.number().int().min(0).nullable().optional(),
     ),
     minimumParticipants: z.coerce.number().int().min(1).nullable().optional(),
-    imageUrl: z.preprocess((v) => (v === "" ? null : v), z.string().url().nullable().optional()),
+    imageUrl: z.preprocess((v) => (v === "" ? null : v), httpUrlSchema.nullable().optional()),
     isActive: z.boolean().optional(),
     sortOrder: z.coerce.number().int().optional(),
   })

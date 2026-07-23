@@ -3,7 +3,11 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as contentService from "../services/content.service.js";
-import { validateRichText } from "../utils/rich-text.js";
+import {
+  siteContentKeySchema,
+  validateSiteContentValue,
+} from "../utils/site-content.js";
+import { localeSchema } from "../utils/content-contracts.js";
 import { NotFoundError } from "../errors/application-error.js";
 
 export const contentRoutes = Router();
@@ -20,23 +24,22 @@ contentRoutes.get("/", async (req: Request, res: Response) => {
 });
 
 contentRoutes.get("/:key", async (req: Request, res: Response) => {
-  const content = await contentService.getContent(req.params.key as string, req.locale);
+  const parsedKey = siteContentKeySchema.safeParse(req.params.key);
+  if (!parsedKey.success) throw new NotFoundError();
+  const content = await contentService.getContent(parsedKey.data, req.locale);
   if (!content) throw new NotFoundError();
   res.json(content);
 });
 
 const upsertSchema = z.object({
-  key: z.string().min(1),
-  locale: z.string().default("he"),
+  key: siteContentKeySchema,
+  locale: localeSchema.default("he"),
   value: z.string().min(1),
 }).strict();
 
 contentRoutes.put("/", requireAuth, async (req: Request, res: Response) => {
   const parsed = upsertSchema.parse(req.body);
-  let value = parsed.value;
-  if (parsed.key === "about") {
-    value = validateRichText(value);
-  }
+  const value = validateSiteContentValue(parsed.key, parsed.value);
   const content = await contentService.upsertContent(parsed.key, parsed.locale, value);
   res.json(content);
 });

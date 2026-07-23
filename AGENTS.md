@@ -152,6 +152,19 @@ development.
 
 Blog bodies, the `about` content entry, treatment descriptions, and lecture descriptions are stored as sanitized semantic HTML. Supported formatting is paragraphs, `h2`/`h3`, bold, italic, ordered and unordered lists, safe HTTP(S)/mailto links, and the `ql-align-{right,center,left}` and `ql-direction-{rtl,ltr}` classes. Unsupported pasted markup, inline styles, embeds, and unsafe URLs are removed.
 
+All other authored strings are bounded plain text, except image and video fields,
+which use their respective validated URL contracts. `SiteContent` accepts only
+these keys: `about` (sanitized semantic HTML), `about_title`, `contact_phone`,
+and `contact_email` (bounded plain text), and `about_image` (validated asset
+URL). Unknown keys are rejected.
+
+Comments are plain text, not HTML. The API trims comment names and bodies,
+rejects inappropriate control characters, and stores literal angle brackets as
+text without sanitizing or interpreting them. The Angular frontend must render
+comments and bounded plain-text `SiteContent` values (`about_title`,
+`contact_phone`, and `contact_email`) with interpolation or `textContent`,
+never `[innerHTML]`.
+
 To convert legacy records, first review the dry-run report and back up its listed records, then apply it:
 
 ```bash

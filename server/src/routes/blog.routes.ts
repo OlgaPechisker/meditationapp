@@ -6,11 +6,17 @@ import * as blogService from "../services/blog.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { youTubeUrlSchema } from "../utils/video.js";
 import { NotFoundError, ValidationError } from "../errors/application-error.js";
+import {
+  boundedPlainTextSchema,
+  httpUrlSchema,
+  localeSchema,
+  slugSchema,
+} from "../utils/content-contracts.js";
 
 export const blogRoutes = Router();
 
 const blogListQuerySchema = paginationSchema.extend({
-  search: z.string().trim().min(1).max(100).optional(),
+  search: boundedPlainTextSchema(100, { trim: true }).optional(),
 });
 
 blogRoutes.get("/", async (req: Request, res: Response) => {
@@ -31,18 +37,18 @@ blogRoutes.get("/:slug", async (req: Request, res: Response) => {
 });
 
 const createSchema = z.object({
-  slug: z.string().min(1), locale: z.string().default("he"), title: z.string().min(1),
-  excerpt: z.string().optional(), content: richTextSchema,
-  imageUrl: z.string().url().optional(), videoUrl: youTubeUrlSchema.optional(),
+  slug: slugSchema, locale: localeSchema.default("he"), title: boundedPlainTextSchema(500),
+  excerpt: boundedPlainTextSchema(5_000, { minLength: 0 }).optional(), content: richTextSchema,
+  imageUrl: httpUrlSchema.optional(), videoUrl: youTubeUrlSchema.optional(),
   publishedAt: z.coerce.date().optional(),
 }).strict();
 
 const patchSchema = z.object({
-  slug: z.string().min(1).optional(),
-  title: z.string().min(1).optional(),
-  excerpt: z.string().optional(),
+  slug: slugSchema.optional(),
+  title: boundedPlainTextSchema(500).optional(),
+  excerpt: boundedPlainTextSchema(5_000, { minLength: 0 }).optional(),
   content: richTextSchema.optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: httpUrlSchema.nullable().optional(),
   videoUrl: youTubeUrlSchema.nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional(),
 }).strict();

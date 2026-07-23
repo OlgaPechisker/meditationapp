@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as songService from "../services/songs.service.js";
 import { ValidationError } from "../errors/application-error.js";
+import { httpUrlSchema, localeSchema } from "../utils/content-contracts.js";
 
 export const songRoutes = Router();
 
@@ -20,8 +21,8 @@ songRoutes.get("/", async (req: Request, res: Response) => {
 });
 
 const createSchema = z.object({
-  locale: z.string().default("he"),
-  imageUrl: z.string().url(),
+  locale: localeSchema.default("he"),
+  imageUrl: httpUrlSchema,
   sortOrder: z.number().int().optional(),
 });
 
@@ -31,7 +32,7 @@ songRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 const patchSchema = z.object({
-  imageUrl: z.string().url().optional(),
+  imageUrl: httpUrlSchema.optional(),
   sortOrder: z.number().int().optional(),
 });
 

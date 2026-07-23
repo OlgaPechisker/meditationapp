@@ -5,6 +5,7 @@ import { rateLimit } from "../middleware/rate-limit.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as commentService from "../services/comments.service.js";
 import { ValidationError } from "../errors/application-error.js";
+import { boundedPlainTextSchema } from "../utils/content-contracts.js";
 
 export const commentRoutes = Router();
 
@@ -18,8 +19,8 @@ commentRoutes.get("/post/:postId", async (req: Request, res: Response) => {
 
 const createCommentSchema = z.object({
   postId: z.number().int().positive(),
-  authorName: z.string().min(1).max(100),
-  content: z.string().min(1).max(2000),
+  authorName: boundedPlainTextSchema(100, { trim: true }),
+  content: boundedPlainTextSchema(2000, { trim: true, allowNewlines: true, allowTabs: true }),
   honeypot: z.string().optional(),
 });
 

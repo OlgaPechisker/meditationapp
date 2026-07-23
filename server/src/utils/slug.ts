@@ -1,3 +1,5 @@
+import { MAX_SLUG_LENGTH } from "./content-contracts.js";
+
 /**
  * Generates a URL-safe slug from arbitrary (including Hebrew/Unicode) text.
  *
@@ -18,5 +20,8 @@ export function generateSlug(title: string): string {
     .replace(/^-+|-+$/g, "");
 
   const suffix = Math.random().toString(36).slice(2, 8);
-  return base ? `${base}-${suffix}` : `lecture-${suffix}`;
+  const suffixWithSeparator = `-${suffix}`;
+  return base
+    ? `${base.slice(0, MAX_SLUG_LENGTH - suffixWithSeparator.length)}${suffixWithSeparator}`
+    : `lecture-${suffix}`;
 }

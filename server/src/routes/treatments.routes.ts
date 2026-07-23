@@ -5,6 +5,12 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as treatmentService from "../services/treatments.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { NotFoundError, ValidationError } from "../errors/application-error.js";
+import {
+  boundedPlainTextSchema,
+  httpUrlSchema,
+  localeSchema,
+  slugSchema,
+} from "../utils/content-contracts.js";
 
 export const treatmentRoutes = Router();
 
@@ -27,10 +33,10 @@ treatmentRoutes.get("/:slug", async (req: Request, res: Response) => {
 });
 
 const createSchema = z.object({
-  slug: z.string().min(1), locale: z.string().default("he"), title: z.string().min(1),
-  subtitle: z.string().optional(), description: richTextSchema,
-  price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
-  imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
+  slug: slugSchema, locale: localeSchema.default("he"), title: boundedPlainTextSchema(500),
+  subtitle: boundedPlainTextSchema(1_000, { minLength: 0 }).optional(), description: richTextSchema,
+  price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), boundedPlainTextSchema(100).optional()),
+  imageUrl: z.preprocess(v => v === '' ? undefined : v, httpUrlSchema.optional()),
   sortOrder: z.number().int().optional(), isActive: z.boolean().optional(),
 }).strict();
 
@@ -40,12 +46,12 @@ treatmentRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 const patchSchema = z.object({
-  slug: z.string().optional(),
-  title: z.string().min(1).optional(),
-  subtitle: z.string().optional(),
+  slug: boundedPlainTextSchema(200, { minLength: 0 }).optional(),
+  title: boundedPlainTextSchema(500).optional(),
+  subtitle: boundedPlainTextSchema(1_000, { minLength: 0 }).optional(),
   description: richTextSchema.optional(),
-  price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), z.string().optional()),
-  imageUrl: z.preprocess(v => v === '' ? undefined : v, z.string().url().optional()),
+  price: z.preprocess(v => (v === '' || v === 0 || v == null) ? undefined : String(v), boundedPlainTextSchema(100).optional()),
+  imageUrl: z.preprocess(v => v === '' ? undefined : v, httpUrlSchema.optional()),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 }).strict();
