@@ -28,7 +28,7 @@ commentRoutes.post("/",
     if (req.body?.honeypot) { res.status(201).json({ message: "Comment submitted" }); return; }
     next();
   },
-  rateLimit(3, 15 * 60 * 1000),
+  rateLimit("comments.create", 3, 15 * 60 * 1000),
   async (req: Request, res: Response) => {
     const { honeypot: _hp, ...data } = createCommentSchema.parse(req.body);
     const comment = await commentService.createComment(data);

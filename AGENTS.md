@@ -64,6 +64,7 @@ Copy the root `.env.example` to `.env` and adjust:
 | `ADMIN_PASSWORD_HASH` | — | Bcrypt hash; required in production |
 | `ADMIN_PASSWORD` | `admin123` | Development-only admin login password |
 | `PORT` | `3000` | HTTP port |
+| `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum active in-memory rate-limit buckets |
 | `STORAGE_PROVIDER` | `local` | `local` \| `s3` \| `azure` |
 | `BASE_URL` | `http://localhost:3000` | Used to build public image URLs |
 
@@ -83,6 +84,12 @@ hours after signing. There is no token revocation store. To invalidate every act
 token during an emergency, replace `JWT_SECRET` with a new secure value and restart
 all application instances; every existing bearer token is immediately invalid, and
 newly issued tokens remain valid for at most two hours.
+
+## Rate limiting deployment
+
+Rate-limit buckets are in-memory and apply only within one application instance.
+Before horizontally scaling the API, replace the in-memory limiter store with a
+shared external store so limits remain consistent across instances.
 
 ## E2E Tests
 

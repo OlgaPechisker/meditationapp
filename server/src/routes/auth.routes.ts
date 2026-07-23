@@ -7,7 +7,7 @@ import { rateLimit } from "../middleware/rate-limit.js";
 export const authRoutes = Router();
 
 const loginSchema = z.object({ password: z.string().min(1) });
-const loginRateLimit = rateLimit(5, 15 * 60 * 1000);
+const loginRateLimit = rateLimit("auth.login", 5, 15 * 60 * 1000);
 
 authRoutes.post("/login", loginRateLimit, async (req: Request, res: Response) => {
   const { password } = loginSchema.parse(req.body);
