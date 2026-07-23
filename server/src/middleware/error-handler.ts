@@ -43,7 +43,12 @@ function classifyError(error: unknown): ApplicationError | undefined {
   return undefined;
 }
 
-export function errorHandler(error: unknown, req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(error: unknown, req: Request, res: Response, next: NextFunction) {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
   const applicationError = classifyError(error);
 
   if (applicationError) {

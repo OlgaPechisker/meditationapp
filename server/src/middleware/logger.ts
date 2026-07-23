@@ -36,6 +36,7 @@ const redactedPaths = [
 const httpLogger = pinoHttp({
   autoLogging: false,
   base: undefined,
+  genReqId: (req) => (req as Request).requestId,
   redact: { paths: redactedPaths, remove: true },
   serializers: {
     req: (req) => ({
