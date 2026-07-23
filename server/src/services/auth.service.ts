@@ -5,5 +5,14 @@ import { config } from "../config.js";
 export async function login(password: string): Promise<string | null> {
   const valid = await bcrypt.compare(password, config.ADMIN_PASSWORD_HASH);
   if (!valid) return null;
-  return jwt.sign({ role: "admin" }, config.JWT_SECRET, { expiresIn: "24h" });
+  return jwt.sign(
+    { role: "admin" },
+    config.JWT_SECRET,
+    {
+      algorithm: "HS256",
+      audience: config.JWT_AUDIENCE,
+      expiresIn: 2 * 60 * 60,
+      issuer: config.JWT_ISSUER,
+    },
+  );
 }

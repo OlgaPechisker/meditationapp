@@ -53,16 +53,36 @@ npm run dev
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` inside `server/` and adjust:
+Copy the root `.env.example` to `.env` and adjust:
 
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgresql://einat:einat@localhost:5432/einat_dev` | Postgres connection string |
-| `JWT_SECRET` | — | Secret for signing admin JWTs |
-| `ADMIN_PASSWORD` | `admin123` | Admin login password |
+| `JWT_SECRET` | — | At least 32 random characters used to sign admin JWTs |
+| `JWT_ISSUER` | — | Required JWT issuer (for example, `einat-api`) |
+| `JWT_AUDIENCE` | — | Required JWT audience (for example, `einat-admin`) |
+| `ADMIN_PASSWORD_HASH` | — | Bcrypt hash; required in production |
+| `ADMIN_PASSWORD` | `admin123` | Development-only admin login password |
 | `PORT` | `3000` | HTTP port |
 | `STORAGE_PROVIDER` | `local` | `local` \| `s3` \| `azure` |
 | `BASE_URL` | `http://localhost:3000` | Used to build public image URLs |
+
+Keep secrets out of source control, deployment logs, and shared examples. Generate
+`JWT_SECRET` with a cryptographically secure generator and use a distinct value in
+every environment. Production requires `ADMIN_PASSWORD_HASH` and rejects
+`ADMIN_PASSWORD`, including known development passwords. Generate a bcrypt hash with:
+
+```powershell
+# Run from the repository root; this uses server/node_modules, not npm exec.
+Set-Location server
+node -e "import bcrypt from 'bcrypt'; console.log(await bcrypt.hash(process.argv[1], 12))" "replace-with-a-strong-password"
+```
+
+Admin JWTs use HS256, the configured issuer and audience, and expire exactly two
+hours after signing. There is no token revocation store. To invalidate every active
+token during an emergency, replace `JWT_SECRET` with a new secure value and restart
+all application instances; every existing bearer token is immediately invalid, and
+newly issued tokens remain valid for at most two hours.
 
 ## E2E Tests
 
@@ -88,7 +108,9 @@ Set `TEST_DATABASE_URL` when running the API suite against an isolated database;
 
 ## Admin Access
 
-Navigate to `/admin/login` in the frontend and enter the admin password (set via `ADMIN_PASSWORD`, default: `admin123`, or provide `ADMIN_PASSWORD_HASH`).
+Navigate to `/admin/login` in the frontend and enter the administrator password.
+Use `ADMIN_PASSWORD_HASH` in production; `ADMIN_PASSWORD` is available only for
+development.
 
 ## Rich content
 

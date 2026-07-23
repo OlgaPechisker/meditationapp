@@ -9,11 +9,17 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: resolve(currentDir, "../.env") });
 loadEnv({ path: resolve(currentDir, "../../.env") });
 
+const bcryptHashPattern = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+const knownDevelopmentPasswords = ["admin123", "test-password", "password"];
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  JWT_SECRET: z.string().min(10),
-  ADMIN_PASSWORD_HASH: z.string().optional(),
+  JWT_SECRET: z.string().min(32),
+  JWT_ISSUER: z.string().trim().min(1),
+  JWT_AUDIENCE: z.string().trim().min(1),
+  ADMIN_PASSWORD_HASH: z.string().regex(bcryptHashPattern).optional(),
   ADMIN_PASSWORD: z.string().optional(),
+  NODE_ENV: z.string().default("development"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   STORAGE_PROVIDER: z.enum(["local"]).default("local"),
   UPLOAD_DIR: z.string().min(1).default("./uploads"),
@@ -26,6 +32,33 @@ const envSchema = z.object({
       message: "Either ADMIN_PASSWORD_HASH or ADMIN_PASSWORD is required",
       path: ["ADMIN_PASSWORD_HASH"],
     });
+  }
+
+  if (env.NODE_ENV === "production") {
+    if (!env.ADMIN_PASSWORD_HASH) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ADMIN_PASSWORD_HASH is required in production",
+        path: ["ADMIN_PASSWORD_HASH"],
+      });
+    }
+
+    if (env.ADMIN_PASSWORD) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ADMIN_PASSWORD is not allowed in production",
+        path: ["ADMIN_PASSWORD"],
+      });
+    }
+
+    const passwordHash = env.ADMIN_PASSWORD_HASH;
+    if (passwordHash && knownDevelopmentPasswords.some((password) => bcrypt.compareSync(password, passwordHash))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ADMIN_PASSWORD_HASH must not use a known development password",
+        path: ["ADMIN_PASSWORD_HASH"],
+      });
+    }
   }
 });
 
@@ -41,9 +74,11 @@ const parsedEnv = environment.data;
 export const config = {
   DATABASE_URL: parsedEnv.DATABASE_URL,
   JWT_SECRET: parsedEnv.JWT_SECRET,
+  JWT_ISSUER: parsedEnv.JWT_ISSUER,
+  JWT_AUDIENCE: parsedEnv.JWT_AUDIENCE,
   ADMIN_PASSWORD_HASH:
     parsedEnv.ADMIN_PASSWORD_HASH ??
-    bcrypt.hashSync(parsedEnv.ADMIN_PASSWORD as string, 10),
+    bcrypt.hashSync(parsedEnv.ADMIN_PASSWORD as string, 12),
   PORT: parsedEnv.PORT,
 };
 

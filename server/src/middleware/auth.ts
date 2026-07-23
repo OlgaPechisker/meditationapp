@@ -12,10 +12,17 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
   try {
     const token = header.slice(7);
-    jwt.verify(token, config.JWT_SECRET);
+    const payload = jwt.verify(token, config.JWT_SECRET, {
+      algorithms: ["HS256"],
+      audience: config.JWT_AUDIENCE,
+      issuer: config.JWT_ISSUER,
+    });
+    if (typeof payload === "string" || payload.role !== "admin") {
+      throw new UnauthorizedError();
+    }
     req.actor = { type: "admin" };
     next();
   } catch {
-    next(new UnauthorizedError("Invalid authentication token"));
+    next(new UnauthorizedError());
   }
 }
