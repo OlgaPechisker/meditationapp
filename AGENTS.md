@@ -64,9 +64,22 @@ Copy the root `.env.example` to `.env` and adjust:
 | `ADMIN_PASSWORD_HASH` | — | Bcrypt hash; required in production |
 | `ADMIN_PASSWORD` | `admin123` | Development-only admin login password |
 | `PORT` | `3000` | HTTP port |
+| `ALLOWED_ORIGINS` | — | Required in production; comma-separated absolute browser origins |
+| `HTTPS_TERMINATION` | `false` | Set `true` only when production HTTPS is guaranteed by trusted infrastructure |
 | `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum active in-memory rate-limit buckets |
 | `STORAGE_PROVIDER` | `local` | `local` \| `s3` \| `azure` |
 | `BASE_URL` | `http://localhost:3000` | Used to build public image URLs |
+
+`ALLOWED_ORIGINS` is a comma-separated allowlist for browser CORS requests.
+Entries must be absolute `http` or `https` origins without credentials, paths,
+queries, or fragments; trailing slashes are normalized away. It is required in
+production. The API allows requests without an `Origin` header for non-browser
+clients and does not enable credentialed CORS.
+
+Set `HTTPS_TERMINATION=true` only when `NODE_ENV=production` and trusted
+infrastructure terminates HTTPS for every public request. This is the only
+configuration that enables HSTS; leave it `false` for local development or any
+deployment that can receive public HTTP.
 
 Keep secrets out of source control, deployment logs, and shared examples. Generate
 `JWT_SECRET` with a cryptographically secure generator and use a distinct value in

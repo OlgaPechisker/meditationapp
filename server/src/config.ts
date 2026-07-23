@@ -12,6 +12,42 @@ loadEnv({ path: resolve(currentDir, "../../.env") });
 const bcryptHashPattern = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 const knownDevelopmentPasswords = ["admin123", "test-password", "password"];
 
+function parseAllowedOrigins(value: string): string[] {
+  const origins = new Set<string>();
+
+  for (const configuredOrigin of value.split(",")) {
+    const origin = configuredOrigin.trim();
+
+    if (!origin) {
+      throw new ConfigurationError(["ALLOWED_ORIGINS"]);
+    }
+
+    try {
+      const url = new URL(origin);
+      if (
+        !/^https?:\/\//i.test(origin) ||
+        origin.includes("?") ||
+        origin.includes("#") ||
+        !["http:", "https:"].includes(url.protocol) ||
+        url.username ||
+        url.password ||
+        url.pathname !== "/" ||
+        url.search ||
+        url.hash ||
+        url.origin === "null"
+      ) {
+        throw new Error("Invalid origin");
+      }
+
+      origins.add(url.origin);
+    } catch {
+      throw new ConfigurationError(["ALLOWED_ORIGINS"]);
+    }
+  }
+
+  return [...origins];
+}
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
@@ -26,6 +62,8 @@ const envSchema = z.object({
   MAX_FILE_SIZE_MB: z.coerce.number().positive().finite().default(5),
   RATE_LIMIT_MAX_BUCKETS: z.coerce.number().int().min(1).max(100_000).default(10_000),
   BASE_URL: z.url().default("http://localhost:3000"),
+  ALLOWED_ORIGINS: z.string().trim().min(1).optional(),
+  HTTPS_TERMINATION: z.enum(["true", "false"]).default("false"),
 }).superRefine((env, ctx) => {
   if (!env.ADMIN_PASSWORD_HASH && !env.ADMIN_PASSWORD) {
     ctx.addIssue({
@@ -36,6 +74,14 @@ const envSchema = z.object({
   }
 
   if (env.NODE_ENV === "production") {
+    if (!env.ALLOWED_ORIGINS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ALLOWED_ORIGINS is required in production",
+        path: ["ALLOWED_ORIGINS"],
+      });
+    }
+
     if (!env.ADMIN_PASSWORD_HASH) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -71,6 +117,9 @@ if (!environment.success) {
 }
 
 const parsedEnv = environment.data;
+const allowedOrigins = parsedEnv.ALLOWED_ORIGINS
+  ? parseAllowedOrigins(parsedEnv.ALLOWED_ORIGINS)
+  : [];
 
 export const config = {
   DATABASE_URL: parsedEnv.DATABASE_URL,
@@ -82,6 +131,8 @@ export const config = {
     bcrypt.hashSync(parsedEnv.ADMIN_PASSWORD as string, 12),
   PORT: parsedEnv.PORT,
   RATE_LIMIT_MAX_BUCKETS: parsedEnv.RATE_LIMIT_MAX_BUCKETS,
+  ALLOWED_ORIGINS: allowedOrigins,
+  HSTS_ENABLED: parsedEnv.NODE_ENV === "production" && parsedEnv.HTTPS_TERMINATION === "true",
 };
 
 export const uploadConfig = {

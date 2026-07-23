@@ -1,5 +1,6 @@
 import express from "express";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
+import helmet from "helmet";
 import { resolve } from "node:path";
 import { config, uploadConfig } from "./config.js";
 import { errorHandler } from "./middleware/error-handler.js";
@@ -21,10 +22,25 @@ import { uploadRoutes } from "./routes/upload.routes.js";
 const app = express();
 
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
+
+const corsOptions: CorsOptions = {
+  origin(origin, callback) {
+    callback(null, !origin || config.ALLOWED_ORIGINS.includes(origin));
+  },
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Authorization", "Content-Type", "Accept-Language"],
+  credentials: false,
+};
 
 app.use(requestIdMiddleware);
 app.use(requestLogger);
-app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  strictTransportSecurity: config.HSTS_ENABLED ? undefined : false,
+}));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(localeMiddleware);
 
