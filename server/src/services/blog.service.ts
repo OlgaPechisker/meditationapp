@@ -30,7 +30,7 @@ export async function listPublishedPosts(
 
 export async function getPostBySlug(slug: string, locale: string) {
   return prisma.blogPost.findFirst({
-    where: { slug, locale, publishedAt: { not: null }, deletedAt: null },
+    where: { slug, locale, publishedAt: { not: null, lte: new Date() }, deletedAt: null },
     include: {
       comments: {
         where: { isApproved: true },
