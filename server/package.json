@@ -14,7 +14,9 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "migrate:rich-text": "tsx prisma/migrate-rich-text.ts"
+    "migrate:rich-text": "tsx prisma/migrate-rich-text.ts",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

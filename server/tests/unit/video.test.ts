@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isYouTubeUrl } from "../src/utils/video.js";
+import { isYouTubeUrl } from "../../src/utils/video.js";
 
 describe("isYouTubeUrl", () => {
   it("accepts watch URLs", () => {
