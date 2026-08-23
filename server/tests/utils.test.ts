@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { slugify } from "../../src/utils/slugify.js";
-import { paginate, paginatedResponse } from "../../src/utils/pagination.js";
+import { slugify } from "../src/utils/slugify.js";
+import { paginate, paginatedResponse } from "../src/utils/pagination.js";
 
 describe("slugify", () => {
   it("converts English text to slug", () => {

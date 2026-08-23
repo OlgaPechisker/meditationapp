@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { migrateRichText, sanitizeRichText, validateRichText } from "../../src/utils/rich-text.js";
+import { migrateRichText, sanitizeRichText, validateRichText } from "../src/utils/rich-text.js";
 
 describe("rich text sanitization", () => {
   it("preserves the supported semantic formatting contract", () => {
