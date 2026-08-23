@@ -1,0 +1,27 @@
+name: Wait for URL
+description: Wait until an HTTP endpoint responds successfully.
+
+inputs:
+  url:
+    description: URL to check with curl.
+    required: true
+  timeout-seconds:
+    description: Maximum number of seconds to wait.
+    required: false
+    default: "30"
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for ${{ inputs.url }}
+      shell: bash
+      run: |
+        timeout="${{ inputs.timeout-seconds }}"
+        for ((attempt = 1; attempt <= timeout; attempt++)); do
+          if curl --fail --silent --show-error "${{ inputs.url }}"; then
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "::error::Timed out after ${timeout}s waiting for ${{ inputs.url }}"
+        exit 1
