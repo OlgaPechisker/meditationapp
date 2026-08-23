@@ -33,8 +33,8 @@ jobs:
       JWT_AUDIENCE: ci-einat-admin
       ADMIN_PASSWORD: ci-admin-password
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24.15.0
           cache: npm
@@ -79,8 +79,8 @@ jobs:
       JWT_AUDIENCE: ci-einat-admin
       ADMIN_PASSWORD: ci-admin-password
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24.15.0
           cache: npm
@@ -91,7 +91,7 @@ jobs:
       - run: npm run build
       - name: Start backend
         run: npm run start &
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: OlgaPechisker/meditationapp-client
           ref: main
@@ -121,7 +121,7 @@ jobs:
           API_URL: http://localhost:3000
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report
           path: playwright-report
