@@ -116,10 +116,16 @@ Backend tests are split into two Vitest projects under `server/tests/`:
 
 In addition to unit/integration tests, CI runs a dependent `e2e` job on pull requests and
 pushes to `main`. It boots PostgreSQL and the backend from the current branch, checks out
-the frontend repository's (`Einat-client`) `main` branch, builds and serves its SSR
-application, waits for both services to become healthy, then runs the root Playwright suite
-(`e2e/`) against them. The Playwright HTML report is uploaded as a build artifact if the
-suite fails.
+the frontend repository's (`Einat-client`) `main` branch, builds it with the `e2e` Angular
+configuration and serves its SSR application, waits for both services to become healthy,
+then runs the root Playwright suite (`e2e/`) against them. The Playwright HTML report is
+uploaded as a build artifact if the suite fails.
+
+The `e2e` build configuration (`npm run build:e2e` in `Einat-client`) is production-like
+(same optimizations/budgets) but keeps `apiUrl` pointed at `http://localhost:3000/api`
+instead of the hardcoded production Railway URL baked into `environment.prod.ts` by the
+default `production` configuration — using a plain `npm run build` here would make the CI
+frontend call the live production API instead of the freshly seeded local backend.
 
 To reproduce this locally, start PostgreSQL and prepare the backend in one terminal:
 
@@ -138,7 +144,7 @@ checkout of `Einat-client` works):
 ```bash
 cd ../Einat-client
 npm ci
-npm run build
+npm run build:e2e
 PORT=4000 npm run serve:ssr:client
 ```
 

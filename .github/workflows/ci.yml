@@ -101,7 +101,7 @@ jobs:
         run: npm ci
       - name: Build client SSR application
         working-directory: client-e2e
-        run: npm run build
+        run: npm run build:e2e
       - name: Start client SSR server
         working-directory: client-e2e
         run: PORT=4000 npm run serve:ssr:client &
