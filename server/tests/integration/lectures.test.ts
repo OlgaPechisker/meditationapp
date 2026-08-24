@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import request from "supertest";
-import { app } from "../src/index.js";
-import { generateSlug } from "../src/utils/slug.js";
+import { app } from "../../src/index.js";
+import { generateSlug } from "../../src/utils/slug.js";
 
 const LOCALE = "he";
 

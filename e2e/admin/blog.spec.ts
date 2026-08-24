@@ -55,7 +55,10 @@ adminTest.describe('Admin Blog', () => {
 
       await page.locator('[data-testid="field-slug"]').fill(slug);
       await page.locator('[data-testid="field-title"]').fill('ABLOG-P2 Draft Post');
-      await page.locator('[data-testid="field-content"]').fill('Draft content body.');
+      // The testid sits on the <app-rich-text-editor> host, not on Quill's
+      // actual contenteditable surface, so .fill() must target the nested
+      // .ql-editor element instead.
+      await page.locator('[data-testid="field-content"] .ql-editor').fill('Draft content body.');
       // Intentionally leave publishedAt empty → draft
       await page.locator('[data-testid="form-save"]').click();
 
@@ -87,7 +90,10 @@ adminTest.describe('Admin Blog', () => {
 
       await page.locator('[data-testid="field-slug"]').fill(slug);
       await page.locator('[data-testid="field-title"]').fill('ABLOG-P3 Published Post');
-      await page.locator('[data-testid="field-content"]').fill('Published post content body.');
+      // See note above re: targeting the nested .ql-editor for rich-text fields.
+      await page
+        .locator('[data-testid="field-content"] .ql-editor')
+        .fill('Published post content body.');
       await page.locator('[data-testid="field-publishedAt"]').fill(publishedAt);
       await page.locator('[data-testid="form-save"]').click();
 
@@ -173,7 +179,8 @@ adminTest.describe('Admin Blog', () => {
     const slug = `ablog-n1-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     await page.locator('[data-testid="field-slug"]').fill(slug);
     // Leave title empty
-    await page.locator('[data-testid="field-content"]').fill('Some content');
+    // See note above re: targeting the nested .ql-editor for rich-text fields.
+    await page.locator('[data-testid="field-content"] .ql-editor').fill('Some content');
     await page.locator('[data-testid="form-save"]').click();
 
     await expect(page.locator('[data-testid="form-error"]')).toBeVisible();
@@ -212,7 +219,8 @@ adminTest.describe('Admin Blog', () => {
       // Same slug + default locale (he) → should trigger duplicate error
       await page.locator('[data-testid="field-slug"]').fill(existing.slug);
       await page.locator('[data-testid="field-title"]').fill('Duplicate Post Title');
-      await page.locator('[data-testid="field-content"]').fill('Some content');
+      // See note above re: targeting the nested .ql-editor for rich-text fields.
+      await page.locator('[data-testid="field-content"] .ql-editor').fill('Some content');
       await page.locator('[data-testid="form-save"]').click();
 
       await expect(page.locator('[data-testid="form-error"]')).toBeVisible();

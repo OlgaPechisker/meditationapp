@@ -48,7 +48,12 @@ adminTest.describe('Admin Treatments', () => {
 
     await page.locator('[data-testid="field-slug"]').fill(slug);
     await page.locator('[data-testid="field-title"]').fill('ATRT-P2 Treatment');
-    await page.locator('[data-testid="field-description"]').fill('Description for ATRT-P2 test.');
+    // The testid sits on the <app-rich-text-editor> host, not on Quill's
+    // actual contenteditable surface, so .fill() must target the nested
+    // .ql-editor element instead.
+    await page
+      .locator('[data-testid="field-description"] .ql-editor')
+      .fill('Description for ATRT-P2 test.');
     await page.locator('[data-testid="form-save"]').click();
 
     await expect(
@@ -130,7 +135,10 @@ adminTest.describe('Admin Treatments', () => {
 
     await page.locator('[data-testid="field-slug"]').fill(slug);
     await page.locator('[data-testid="field-title"]').fill('ATRT-P5 All Fields');
-    await page.locator('[data-testid="field-description"]').fill('Full optional fields description.');
+    // See note above re: targeting the nested .ql-editor for rich-text fields.
+    await page
+      .locator('[data-testid="field-description"] .ql-editor')
+      .fill('Full optional fields description.');
     await page.locator('[data-testid="field-price"]').fill('250');
     await Promise.all([
       page.waitForResponse(

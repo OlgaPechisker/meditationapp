@@ -100,3 +100,56 @@ To convert legacy records, first review the dry-run report and back up its liste
 npm run migrate:rich-text --workspace=server
 npm run migrate:rich-text --workspace=server -- --apply
 ```
+
+## Test suites
+
+Backend tests are split into two Vitest projects under `server/tests/`:
+
+- `unit/` — pure logic/validation tests with no database dependency. Run with
+  `npm run test:unit --workspace=server`.
+- `integration/` — Supertest-driven tests that exercise the real Express app and Postgres
+  via Prisma. Run with `npm run test:integration --workspace=server`.
+
+`npm run test --workspace=server` runs both projects. CI runs them as separate steps.
+
+## Cross-repository E2E CI
+
+In addition to unit/integration tests, CI runs a dependent `e2e` job on pull requests and
+pushes to `main`. It boots PostgreSQL and the backend from the current branch, checks out
+the frontend repository's (`Einat-client`) `main` branch, builds it with the `e2e` Angular
+configuration and serves its SSR application, waits for both services to become healthy,
+then runs the root Playwright suite (`e2e/`) against them. The Playwright HTML report is
+uploaded as a build artifact if the suite fails.
+
+The `e2e` build configuration (`npm run build:e2e` in `Einat-client`) is production-like
+(same optimizations/budgets) but keeps `apiUrl` pointed at `http://localhost:3000/api`
+instead of the hardcoded production Railway URL baked into `environment.prod.ts` by the
+default `production` configuration — using a plain `npm run build` here would make the CI
+frontend call the live production API instead of the freshly seeded local backend.
+
+To reproduce this locally, start PostgreSQL and prepare the backend in one terminal:
+
+```bash
+docker-compose up -d
+npm ci
+npm run db:migrate
+npm run db:seed
+npm run build
+npm run start
+```
+
+Build and serve the sibling frontend repository in a second terminal (any convenient
+checkout of `Einat-client` works):
+
+```bash
+cd ../Einat-client
+npm ci
+npm run build:e2e
+PORT=4000 npm run serve:ssr:client
+```
+
+Then run the backend E2E suite with both service URLs:
+
+```bash
+APP_URL=http://localhost:4000 API_URL=http://localhost:3000 npm run e2e
+```
