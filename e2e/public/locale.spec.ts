@@ -9,7 +9,7 @@ test.describe('Locale resolution via API', () => {
   let enTreatment: { id: number; slug: string };
 
   test.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     heTreatment = await createTreatment(request, token, {
       title: 'Hebrew Treatment for Locale Test',
       locale: 'he',

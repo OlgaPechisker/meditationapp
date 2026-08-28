@@ -5,7 +5,7 @@ adminTest.describe('Admin Content', () => {
   let token = '';
 
   adminTest.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
   });
 
   adminTest('ACNT-P1: /admin/content shows About and Contact sections pre-populated', async ({

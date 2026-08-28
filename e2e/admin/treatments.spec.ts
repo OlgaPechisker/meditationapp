@@ -14,7 +14,7 @@ adminTest.describe('Admin Treatments', () => {
   let token = '';
 
   adminTest.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
   });
 
   // No DELETE endpoint for treatments — each test uses unique timestamps in slugs

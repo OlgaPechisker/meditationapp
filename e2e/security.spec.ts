@@ -42,7 +42,7 @@ test.describe('Security', () => {
   // ── SEC-4 ──────────────────────────────────────────────────────────────────
 
   test('SEC-4: Honeypot comment returns 201 but is not persisted in approved list', async ({ request }) => {
-    const token = await getAdminToken(request);
+    const token = await getAdminToken();
     const post = await createBlogPost(request, token, {
       publishedAt: new Date(Date.now() - 60_000).toISOString(),
     });
@@ -75,7 +75,7 @@ test.describe('Security', () => {
   // ── SEC-5 ──────────────────────────────────────────────────────────────────
 
   test('SEC-5: XSS in blog post content is removed and not executed', async ({ page, request }) => {
-    const token = await getAdminToken(request);
+    const token = await getAdminToken();
     const post = await createBlogPost(request, token, {
       title:       'SEC-5 XSS Test Post',
       content:     `<p>Safe content</p><script>alert('XSS')</script><p>More safe content</p>`,
@@ -104,7 +104,7 @@ test.describe('Security', () => {
   // ── SEC-8 ──────────────────────────────────────────────────────────────────
 
   test('SEC-8: Rich-content write endpoints reject unknown fields', async ({ request }) => {
-    const token = await getAdminToken(request);
+    const token = await getAdminToken();
     const headers = { Authorization: `Bearer ${token}` };
     const endpoints = [
       { method: 'patch', path: '/api/blog/1', body: { unexpected: true } },
@@ -149,7 +149,7 @@ test.describe('Security', () => {
   // isPlatformServer() and the requested post lookup returns nothing/is a
   // draft.
   test.skip('SEC-7: Draft blog post URL returns HTTP 404 from SSR', async ({ page, request }) => {
-    const token = await getAdminToken(request);
+    const token = await getAdminToken();
     // No publishedAt → post is a draft and must not be publicly accessible
     const post = await createBlogPost(request, token, {
       title: 'SEC-7 Draft Post — expected 404',

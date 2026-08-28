@@ -1,11 +1,11 @@
 import { chromium, FullConfig } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { STORAGE_STATE } from './fixtures/auth-state';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 const APP_URL = process.env.APP_URL ?? 'http://localhost:4200';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123';
-export const STORAGE_STATE = path.join(__dirname, '.auth', 'admin.json');
 
 async function globalSetup(_config: FullConfig) {
   // Ensure .auth directory exists
@@ -34,7 +34,7 @@ async function globalSetup(_config: FullConfig) {
     headers: { Authorization: `Bearer ${token}` },
   }).catch(() => {/* best-effort */});
 
-  // Save storageStatewith token in localStorage
+  // Save storage state with token in localStorage.
   await context.addInitScript(() => {}); // ensure context is ready
   const page = await context.newPage();
   await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });

@@ -1,4 +1,5 @@
 import { APIRequestContext } from '@playwright/test';
+import { readAdminToken } from './auth-state';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
@@ -314,12 +315,6 @@ export async function upsertContent(
 }
 
 // ---- Auth ----
-export async function getAdminToken(request: APIRequestContext): Promise<string> {
-  const password = process.env.ADMIN_PASSWORD ?? 'admin123';
-  const res = await request.post(apiUrl('/api/auth/login'), {
-    data: { password },
-  });
-  if (!res.ok()) throw new Error(`getAdminToken failed: ${res.status()} ${await res.text()}`);
-  const { token } = await res.json();
-  return token;
+export async function getAdminToken(): Promise<string> {
+  return readAdminToken();
 }

@@ -29,7 +29,7 @@ test.describe('Rate Limit', () => {
   test(
     'RATE-1/2/3: Rate limit — 3 comments allowed, 4th returns 429 (API + UI)',
     async ({ page, request }) => {
-      const token = await getAdminToken(request);
+      const token = await getAdminToken();
       // Reset rate-limit store so prior test runs don't pollute this test
       await resetRateLimit(request, token);
       const post = await createBlogPost(request, token, {

@@ -10,7 +10,7 @@ test.describe('Public Lectures', () => {
     page.locator(`[data-testid="lecture-card"][data-id="${id}"]`);
 
   test.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     extraIds.length = 0;
 
     const futureDate = new Date();

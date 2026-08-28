@@ -15,7 +15,7 @@ adminTest.describe('Admin Comments', () => {
   const commentsToCleanup: number[] = [];
 
   adminTest.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     commentsToCleanup.length = 0;
     post = await createBlogPost(request, token, {
       title: 'ACMT Blog Post',

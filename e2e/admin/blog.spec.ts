@@ -6,7 +6,7 @@ adminTest.describe('Admin Blog', () => {
   const postsToCleanup: number[] = [];
 
   adminTest.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     postsToCleanup.length = 0;
   });
 
