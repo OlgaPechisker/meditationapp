@@ -26,5 +26,8 @@
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "^1.1.5"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.0"
   }
 }
