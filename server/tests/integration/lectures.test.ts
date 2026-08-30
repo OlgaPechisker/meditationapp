@@ -39,6 +39,14 @@ function onDemandPayload(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function expectValidationField(res: request.Response, field: string) {
+  expect(res.body).toMatchObject({
+    code: "VALIDATION_ERROR",
+    requestId: expect.any(String),
+  });
+  expect(res.body.details.fields).toHaveProperty(field);
+}
+
 describe("Lectures API — validation & contract", () => {
   let token = "";
   const created: number[] = [];
@@ -82,7 +90,7 @@ describe("Lectures API — validation & contract", () => {
     delete (payload as Record<string, unknown>).date;
     const res = await request(app).post("/api/lectures").set(auth()).send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("date");
+    expectValidationField(res, "date");
   });
 
   it("rejects an on-demand lecture without minimum participants", async () => {
@@ -90,7 +98,7 @@ describe("Lectures API — validation & contract", () => {
     delete (payload as Record<string, unknown>).minimumParticipants;
     const res = await request(app).post("/api/lectures").set(auth()).send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("minimumParticipants");
+    expectValidationField(res, "minimumParticipants");
   });
 
   it("rejects an on-demand lecture with minimum participants below 1", async () => {
@@ -106,7 +114,7 @@ describe("Lectures API — validation & contract", () => {
     delete (payload as Record<string, unknown>).type;
     const res = await request(app).post("/api/lectures").set(auth()).send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("type");
+    expectValidationField(res, "type");
   });
 
   it("rejects an optional text field when it is supplied blank", async () => {
@@ -115,7 +123,7 @@ describe("Lectures API — validation & contract", () => {
       .set(auth())
       .send(scheduledPayload({ subtitle: "   " }));
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("subtitle");
+    expectValidationField(res, "subtitle");
   });
 
   it("rejects a scheduled lecture that also sets minimum participants", async () => {
@@ -131,7 +139,7 @@ describe("Lectures API — validation & contract", () => {
     delete (payload as Record<string, unknown>)[field];
     const res = await request(app).post("/api/lectures").set(auth()).send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty(field);
+    expectValidationField(res, field);
   });
 
   it("generates a slug when none is provided", async () => {
@@ -187,7 +195,11 @@ describe("Lectures API — validation & contract", () => {
         .set(auth())
         .send(scheduledPayload({ slug: "already-used", title }));
       expect(exhausted.status).toBe(409);
-      expect(exhausted.body.error).toContain("slug");
+      expect(exhausted.body).toMatchObject({
+        code: "CONFLICT",
+        message: expect.stringContaining("slug"),
+        requestId: expect.any(String),
+      });
     } finally {
       random.mockRestore();
     }
@@ -311,7 +323,7 @@ describe("Lectures API — patch merge validation", () => {
       .set(auth())
       .send({ type: "ON_DEMAND" });
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("minimumParticipants");
+    expectValidationField(res, "minimumParticipants");
   });
 
   it("rejects clearing the date on a scheduled lecture", async () => {
@@ -321,7 +333,7 @@ describe("Lectures API — patch merge validation", () => {
       .set(auth())
       .send({ date: null });
     expect(res.status).toBe(400);
-    expect(res.body.error.fieldErrors).toHaveProperty("date");
+    expectValidationField(res, "date");
   });
 
   it("converts an on-demand lecture to scheduled and clears minimum participants", async () => {

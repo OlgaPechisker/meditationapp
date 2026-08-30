@@ -7,7 +7,7 @@ test.describe('Public Treatments', () => {
   const extraIds: number[] = [];
 
   test.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     extraIds.length = 0;
     treatment = await createTreatment(request, token, {
       title: 'E2E Active Treatment',

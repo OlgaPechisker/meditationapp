@@ -1,24 +1,18 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import { extname } from "node:path";
+import { randomUUID } from "node:crypto";
 import { requireAuth } from "../middleware/auth.js";
 import { storageProvider } from "../services/storage/index.js";
 import { uploadConfig } from "../config.js";
+import { UploadValidationError } from "../errors/application-error.js";
+import { inspectVerifiedImage } from "../utils/verified-image.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const uploadRoutes = Router();
 
-const ALLOWED_MIMETYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: uploadConfig.MAX_FILE_SIZE_MB * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIMETYPES.has(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed (jpeg, png, webp, gif)"));
-    }
-  },
+  limits: { fileSize: uploadConfig.MAX_FILE_SIZE_BYTES },
 });
 
 uploadRoutes.post(
@@ -27,14 +21,24 @@ uploadRoutes.post(
   upload.single("file"),
   async (req: Request, res: Response) => {
     if (!req.file) {
-      res.status(400).json({ error: "No file provided" });
-      return;
+      throw new UploadValidationError();
     }
 
-    const ext = extname(req.file.originalname).toLowerCase() || ".jpg";
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const image = await inspectVerifiedImage(req.file.buffer);
+    if (!image || req.file.mimetype.trim().toLowerCase() !== image.contentType) {
+      throw new UploadValidationError();
+    }
 
-    const url = await storageProvider.upload(req.file.buffer, filename, req.file.mimetype);
+    const filename = `${randomUUID()}.${image.extension}`;
+    const url = await storageProvider.upload(req.file.buffer, {
+      filename,
+      contentType: image.contentType,
+    });
+    emitAdminMutation(req, {
+      action: "upload",
+      resourceType: "upload",
+      resourceId: filename,
+    });
     res.status(201).json({ url });
   }
 );

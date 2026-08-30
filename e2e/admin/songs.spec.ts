@@ -42,7 +42,7 @@ adminTest.describe('Admin Songs', () => {
   const songsToCleanup: number[] = [];
 
   adminTest.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     songsToCleanup.length = 0;
   });
 

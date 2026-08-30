@@ -26,7 +26,7 @@ test.describe('Public Songs', () => {
   let song: { id: number; imageUrl: string };
 
   test.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     song = await createSong(request, token, {
       imageUrl: `https://placehold.co/400x600.png?text=E2E-Song-${Date.now()}`,
       sortOrder: -1000,

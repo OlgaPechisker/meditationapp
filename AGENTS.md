@@ -53,16 +53,72 @@ npm run dev
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` inside `server/` and adjust:
+Copy the root `.env.example` to `.env` and adjust:
 
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgresql://einat:einat@localhost:5432/einat_dev` | Postgres connection string |
-| `JWT_SECRET` | — | Secret for signing admin JWTs |
-| `ADMIN_PASSWORD` | `admin123` | Admin login password |
+| `JWT_SECRET` | — | At least 32 random characters used to sign admin JWTs |
+| `JWT_ISSUER` | — | Required JWT issuer (for example, `einat-api`) |
+| `JWT_AUDIENCE` | — | Required JWT audience (for example, `einat-admin`) |
+| `ADMIN_PASSWORD_HASH` | — | Bcrypt hash; required in production |
+| `ADMIN_PASSWORD` | `admin123` | Development-only admin login password |
 | `PORT` | `3000` | HTTP port |
+| `ALLOWED_ORIGINS` | — | Required in production; comma-separated absolute browser origins |
+| `HTTPS_TERMINATION` | `false` | Set `true` only when production HTTPS is guaranteed by trusted infrastructure |
+| `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum active in-memory rate-limit buckets |
 | `STORAGE_PROVIDER` | `local` | `local` \| `s3` \| `azure` |
+| `MAX_FILE_SIZE_MB` | `5` | Whole-number image-upload limit in MB; range `1`–`25` |
 | `BASE_URL` | `http://localhost:3000` | Used to build public image URLs |
+
+`ALLOWED_ORIGINS` is a comma-separated allowlist for browser CORS requests.
+Entries must be absolute `http` or `https` origins without credentials, paths,
+queries, or fragments; trailing slashes are normalized away. It is required in
+production. The API allows requests without an `Origin` header for non-browser
+clients and does not enable credentialed CORS.
+
+Set `HTTPS_TERMINATION=true` only when `NODE_ENV=production` and trusted
+infrastructure terminates HTTPS for every public request. This is the only
+configuration that enables HSTS; leave it `false` for local development or any
+deployment that can receive public HTTP.
+
+Keep secrets out of source control, deployment logs, and shared examples. Generate
+`JWT_SECRET` with a cryptographically secure generator and use a distinct value in
+every environment. Production requires `ADMIN_PASSWORD_HASH` and rejects
+`ADMIN_PASSWORD`, including known development passwords. Generate a bcrypt hash with:
+
+```powershell
+# Run from the repository root; this uses server/node_modules, not npm exec.
+Set-Location server
+node -e "import bcrypt from 'bcrypt'; console.log(await bcrypt.hash(process.argv[1], 12))" "replace-with-a-strong-password"
+```
+
+Admin JWTs use HS256, the configured issuer and audience, and expire exactly two
+hours after signing. There is no token revocation store. To invalidate every active
+token during an emergency, replace `JWT_SECRET` with a new secure value and restart
+all application instances; every existing bearer token is immediately invalid, and
+newly issued tokens remain valid for at most two hours.
+
+## Rate limiting deployment
+
+Rate-limit buckets are in-memory and apply only within one application instance.
+Before horizontally scaling the API, replace the in-memory limiter store with a
+shared external store so limits remain consistent across instances.
+
+## Image upload deployment
+
+The API accepts only structurally valid, magic-byte-verified JPEG, PNG, WebP, and
+GIF uploads. Client file names and declared MIME types are untrusted; the declared
+type must match the inspected image bytes. URLs use a server-generated UUID and
+the inspected extension.
+
+For production, expose `/uploads` through a dedicated cookieless **same-site**
+asset hostname (for example, `https://assets.example.com`) and set `BASE_URL` to
+that origin. The reverse proxy must route that path to the application or approved
+asset storage without attaching application cookies. Do not set authentication
+cookies with a parent-domain `Domain` attribute that includes the asset hostname.
+Upload responses use `Cross-Origin-Resource-Policy: same-site`, so the frontend
+and asset hostname must share the same scheme and registrable domain.
 
 ## E2E Tests
 
@@ -88,11 +144,26 @@ Set `TEST_DATABASE_URL` when running the API suite against an isolated database;
 
 ## Admin Access
 
-Navigate to `/admin/login` in the frontend and enter the admin password (set via `ADMIN_PASSWORD`, default: `admin123`, or provide `ADMIN_PASSWORD_HASH`).
+Navigate to `/admin/login` in the frontend and enter the administrator password.
+Use `ADMIN_PASSWORD_HASH` in production; `ADMIN_PASSWORD` is available only for
+development.
 
 ## Rich content
 
 Blog bodies, the `about` content entry, treatment descriptions, and lecture descriptions are stored as sanitized semantic HTML. Supported formatting is paragraphs, `h2`/`h3`, bold, italic, ordered and unordered lists, safe HTTP(S)/mailto links, and the `ql-align-{right,center,left}` and `ql-direction-{rtl,ltr}` classes. Unsupported pasted markup, inline styles, embeds, and unsafe URLs are removed.
+
+All other authored strings are bounded plain text, except image and video fields,
+which use their respective validated URL contracts. `SiteContent` accepts only
+these keys: `about` (sanitized semantic HTML), `about_title`, `contact_phone`,
+and `contact_email` (bounded plain text), and `about_image` (validated asset
+URL). Unknown keys are rejected.
+
+Comments are plain text, not HTML. The API trims comment names and bodies,
+rejects inappropriate control characters, and stores literal angle brackets as
+text without sanitizing or interpreting them. The Angular frontend must render
+comments and bounded plain-text `SiteContent` values (`about_title`,
+`contact_phone`, and `contact_email`) with interpolation or `textContent`,
+never `[innerHTML]`.
 
 To convert legacy records, first review the dry-run report and back up its listed records, then apply it:
 

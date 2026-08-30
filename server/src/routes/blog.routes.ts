@@ -5,17 +5,23 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as blogService from "../services/blog.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { youTubeUrlSchema } from "../utils/video.js";
+import { NotFoundError, ValidationError } from "../errors/application-error.js";
+import {
+  boundedPlainTextSchema,
+  httpUrlSchema,
+  localeSchema,
+  slugSchema,
+} from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const blogRoutes = Router();
 
 const blogListQuerySchema = paginationSchema.extend({
-  search: z.string().trim().min(1).max(100).optional(),
+  search: boundedPlainTextSchema(100, { trim: true }).optional(),
 });
 
 blogRoutes.get("/", async (req: Request, res: Response) => {
-  const parsed = blogListQuerySchema.safeParse(req.query);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const result = await blogService.listPublishedPosts(req.locale, parsed.data);
+  const result = await blogService.listPublishedPosts(req.locale, blogListQuerySchema.parse(req.query));
   res.json(result);
 });
 
@@ -27,46 +33,57 @@ blogRoutes.get("/admin/all", requireAuth, async (req: Request, res: Response) =>
 
 blogRoutes.get("/:slug", async (req: Request, res: Response) => {
   const post = await blogService.getPostBySlug(req.params.slug as string, req.locale);
-  if (!post) { res.status(404).json({ error: "Not found" }); return; }
+  if (!post) throw new NotFoundError();
   res.json(post);
 });
 
 const createSchema = z.object({
-  slug: z.string().min(1), locale: z.string().default("he"), title: z.string().min(1),
-  excerpt: z.string().optional(), content: richTextSchema,
-  imageUrl: z.string().url().optional(), videoUrl: youTubeUrlSchema.optional(),
+  slug: slugSchema, locale: localeSchema.default("he"), title: boundedPlainTextSchema(500),
+  excerpt: boundedPlainTextSchema(5_000, { minLength: 0 }).optional(), content: richTextSchema,
+  imageUrl: httpUrlSchema.optional(), videoUrl: youTubeUrlSchema.optional(),
   publishedAt: z.coerce.date().optional(),
 }).strict();
 
 const patchSchema = z.object({
-  slug: z.string().min(1).optional(),
-  title: z.string().min(1).optional(),
-  excerpt: z.string().optional(),
+  slug: slugSchema.optional(),
+  title: boundedPlainTextSchema(500).optional(),
+  excerpt: boundedPlainTextSchema(5_000, { minLength: 0 }).optional(),
   content: richTextSchema.optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: httpUrlSchema.nullable().optional(),
   videoUrl: youTubeUrlSchema.nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional(),
 }).strict();
 
 blogRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const post = await blogService.createPost(parsed.data);
+  const post = await blogService.createPost(createSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "create",
+    resourceType: "blog_post",
+    resourceId: String(post.id),
+  });
   res.status(201).json(post);
 });
 
 blogRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const post = await blogService.updatePost(id, parsed.data);
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
+  const post = await blogService.updatePost(id, patchSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "blog_post",
+    resourceId: String(post.id),
+  });
   res.json(post);
 });
 
 blogRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await blogService.softDeletePost(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "blog_post",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

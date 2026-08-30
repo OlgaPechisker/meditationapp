@@ -13,7 +13,7 @@ adminTest.describe('Admin Lectures', () => {
   let token = '';
 
   adminTest.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
   });
 
   adminTest('ALEC-P1: /admin/lectures lists all lectures', async ({ page, request }) => {

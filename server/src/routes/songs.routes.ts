@@ -3,6 +3,9 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { paginationSchema } from "../utils/pagination.js";
 import * as songService from "../services/songs.service.js";
+import { ValidationError } from "../errors/application-error.js";
+import { httpUrlSchema, localeSchema } from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const songRoutes = Router();
 
@@ -19,35 +22,46 @@ songRoutes.get("/", async (req: Request, res: Response) => {
 });
 
 const createSchema = z.object({
-  locale: z.string().default("he"),
-  imageUrl: z.string().url(),
+  locale: localeSchema.default("he"),
+  imageUrl: httpUrlSchema,
   sortOrder: z.number().int().optional(),
 });
 
 songRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const song = await songService.createSong(parsed.data);
+  const song = await songService.createSong(createSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "create",
+    resourceType: "song",
+    resourceId: String(song.id),
+  });
   res.status(201).json(song);
 });
 
 const patchSchema = z.object({
-  imageUrl: z.string().url().optional(),
+  imageUrl: httpUrlSchema.optional(),
   sortOrder: z.number().int().optional(),
 });
 
 songRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-  const song = await songService.updateSong(id, parsed.data);
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
+  const song = await songService.updateSong(id, patchSchema.parse(req.body));
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "song",
+    resourceId: String(song.id),
+  });
   res.json(song);
 });
 
 songRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await songService.deleteSong(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "song",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

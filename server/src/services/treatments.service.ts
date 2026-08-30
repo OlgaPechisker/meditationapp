@@ -11,7 +11,7 @@ export async function listTreatments(locale: string, pagination: PaginationParam
 }
 
 export async function getTreatmentBySlug(slug: string, locale: string) {
-  return prisma.treatment.findUnique({ where: { slug_locale: { slug, locale } } });
+  return prisma.treatment.findFirst({ where: { slug, locale, isActive: true } });
 }
 
 export async function createTreatment(data: {

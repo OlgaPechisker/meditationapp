@@ -17,7 +17,7 @@ test.describe('Public Blog', () => {
   const commentsToCleanup: number[] = [];
 
   test.beforeEach(async ({ request }) => {
-    token = await getAdminToken(request);
+    token = await getAdminToken();
     postsToCleanup.length = 0;
     commentsToCleanup.length = 0;
     post = await createBlogPost(request, token, {

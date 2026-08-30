@@ -5,6 +5,14 @@ import { paginationSchema } from "../utils/pagination.js";
 import * as lectureService from "../services/lectures.service.js";
 import { richTextSchema } from "../utils/rich-text.js";
 import { generateSlug } from "../utils/slug.js";
+import { ConflictError, NotFoundError, ValidationError } from "../errors/application-error.js";
+import {
+  boundedPlainTextSchema,
+  httpUrlSchema,
+  localeSchema,
+  slugSchema,
+} from "../utils/content-contracts.js";
+import { emitAdminMutation } from "../middleware/security-events.js";
 
 export const lectureRoutes = Router();
 
@@ -22,7 +30,7 @@ lectureRoutes.get("/admin/all", requireAuth, async (req: Request, res: Response)
 
 lectureRoutes.get("/:slug", async (req: Request, res: Response) => {
   const lecture = await lectureService.getLectureBySlug(req.params.slug as string, req.locale);
-  if (!lecture) { res.status(404).json({ error: "Not found" }); return; }
+  if (!lecture) throw new NotFoundError();
   res.json(lecture);
 });
 
@@ -31,28 +39,28 @@ const priceSchema = z.preprocess(
   (v) => (v === "" || v == null ? undefined : v),
   z.coerce.number().int().min(0).optional(),
 );
-const imageUrlSchema = z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional());
-const highlightsSchema = z.array(z.string().trim().min(1));
-const optionalTextSchema = z.preprocess(
+const imageUrlSchema = z.preprocess((v) => (v === "" ? undefined : v), httpUrlSchema.optional());
+const highlightsSchema = z.array(boundedPlainTextSchema(1_000, { trim: true })).max(100);
+const optionalTextSchema = (maximumLength: number) => z.preprocess(
   (v) => (v === "" ? undefined : v),
-  z.string().trim().min(1).optional(),
+  boundedPlainTextSchema(maximumLength, { trim: true }).optional(),
 );
-const optionalNullableTextSchema = z.preprocess(
+const optionalNullableTextSchema = (maximumLength: number) => z.preprocess(
   (v) => (v === "" ? null : v),
-  z.string().trim().min(1).nullable().optional(),
+  boundedPlainTextSchema(maximumLength, { trim: true }).nullable().optional(),
 );
 
 const sharedCreateFields = {
-  slug: z.string().trim().optional(),
-  locale: z.string().default("he"),
-  title: z.string().trim().min(1),
-  subtitle: optionalTextSchema,
-  summary: optionalTextSchema,
+  slug: boundedPlainTextSchema(200, { minLength: 0, trim: true }).optional(),
+  locale: localeSchema.default("he"),
+  title: boundedPlainTextSchema(500, { trim: true }),
+  subtitle: optionalTextSchema(1_000),
+  summary: optionalTextSchema(5_000),
   description: richTextSchema,
-  audience: optionalTextSchema,
-  durationLabel: optionalTextSchema,
+  audience: optionalTextSchema(1_000),
+  durationLabel: optionalTextSchema(200),
   highlights: highlightsSchema.optional(),
-  location: z.string().trim().min(1),
+  location: boundedPlainTextSchema(500, { trim: true }),
   price: priceSchema,
   imageUrl: imageUrlSchema,
   isActive: z.boolean().optional(),
@@ -109,10 +117,7 @@ function isSlugLocaleConflict(error: unknown): boolean {
 }
 
 lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
-  const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
-
-  const input = parsed.data;
+  const input = createSchema.parse(req.body);
   const data = {
     slug: input.slug && input.slug.length > 0 ? input.slug : generateSlug(input.title),
     locale: input.locale,
@@ -136,13 +141,17 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
   for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt++) {
     try {
       const lecture = await lectureService.createLecture(data);
+      emitAdminMutation(req, {
+        action: "create",
+        resourceType: "lecture",
+        resourceId: String(lecture.id),
+      });
       res.status(201).json(lecture);
       return;
     } catch (error) {
       if (!isSlugLocaleConflict(error)) throw error;
       if (attempt === MAX_SLUG_CREATE_ATTEMPTS - 1) {
-        res.status(409).json({ error: "Unable to generate a unique lecture slug" });
-        return;
+        throw new ConflictError("Unable to generate a unique lecture slug");
       }
       data.slug = generateSlug(input.title);
     }
@@ -152,23 +161,23 @@ lectureRoutes.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---- PATCH ----
 const patchSchema = z
   .object({
-    slug: z.string().trim().min(1).optional(),
+    slug: slugSchema.optional(),
     type: z.enum(["SCHEDULED", "ON_DEMAND"]).optional(),
-    title: z.string().trim().min(1).optional(),
-    subtitle: optionalNullableTextSchema,
-    summary: optionalNullableTextSchema,
+    title: boundedPlainTextSchema(500, { trim: true }).optional(),
+    subtitle: optionalNullableTextSchema(1_000),
+    summary: optionalNullableTextSchema(5_000),
     description: richTextSchema.optional(),
-    audience: optionalNullableTextSchema,
-    durationLabel: optionalNullableTextSchema,
+    audience: optionalNullableTextSchema(1_000),
+    durationLabel: optionalNullableTextSchema(200),
     highlights: highlightsSchema.optional(),
     date: z.coerce.date().nullable().optional(),
-    location: z.string().trim().min(1).optional(),
+    location: boundedPlainTextSchema(500, { trim: true }).optional(),
     price: z.preprocess(
       (v) => (v === "" ? null : v),
       z.coerce.number().int().min(0).nullable().optional(),
     ),
     minimumParticipants: z.coerce.number().int().min(1).nullable().optional(),
-    imageUrl: z.preprocess((v) => (v === "" ? null : v), z.string().url().nullable().optional()),
+    imageUrl: z.preprocess((v) => (v === "" ? null : v), httpUrlSchema.nullable().optional()),
     isActive: z.boolean().optional(),
     sortOrder: z.coerce.number().int().optional(),
   })
@@ -176,15 +185,13 @@ const patchSchema = z
 
 lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
 
-  const parsed = patchSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+  const patch = patchSchema.parse(req.body);
 
   const current = await lectureService.getLectureById(id);
-  if (!current) { res.status(404).json({ error: "Not found" }); return; }
+  if (!current) throw new NotFoundError();
 
-  const patch = parsed.data;
   const effectiveType = patch.type ?? current.type;
   const effectiveDate = patch.date !== undefined ? patch.date : current.date;
   const effectiveMinimum =
@@ -199,8 +206,7 @@ lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => 
     fieldErrors.minimumParticipants = ["On-demand lectures require a minimum of at least 1 participant"];
   }
   if (Object.keys(fieldErrors).length > 0) {
-    res.status(400).json({ error: { formErrors: [], fieldErrors } });
-    return;
+    throw new ValidationError("Invalid lecture", { fields: fieldErrors });
   }
 
   // Build the update, clearing the field that is irrelevant to the effective type.
@@ -221,12 +227,22 @@ lectureRoutes.patch("/:id", requireAuth, async (req: Request, res: Response) => 
   }
 
   const lecture = await lectureService.updateLecture(id, data);
+  emitAdminMutation(req, {
+    action: "update",
+    resourceType: "lecture",
+    resourceId: String(lecture.id),
+  });
   res.json(lecture);
 });
 
 lectureRoutes.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) throw new ValidationError("Invalid ID");
   await lectureService.deleteLecture(id);
+  emitAdminMutation(req, {
+    action: "delete",
+    resourceType: "lecture",
+    resourceId: String(id),
+  });
   res.status(204).end();
 });

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { httpUrlSchema } from "./content-contracts.js";
 
 const YOUTUBE_HOST = /^(?:www\.)?(?:youtube\.com|youtu\.be)$/i;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
@@ -38,7 +38,4 @@ export function isYouTubeUrl(value: string): boolean {
   return !!id && VIDEO_ID.test(id);
 }
 
-export const youTubeUrlSchema = z
-  .string()
-  .url()
-  .refine(isYouTubeUrl, "Must be a valid YouTube URL");
+export const youTubeUrlSchema = httpUrlSchema.refine(isYouTubeUrl, "Must be a valid YouTube URL");
