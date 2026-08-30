@@ -27,7 +27,10 @@ app.disable("x-powered-by");
 
 const corsOptions: CorsOptions = {
   origin(origin, callback) {
-    callback(null, !origin || config.ALLOWED_ORIGINS.includes(origin));
+    callback(
+      null,
+      !origin || config.ALLOWED_ORIGINS.length === 0 || config.ALLOWED_ORIGINS.includes(origin),
+    );
   },
   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Authorization", "Content-Type", "Accept-Language"],
