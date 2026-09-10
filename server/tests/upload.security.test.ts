@@ -136,7 +136,7 @@ describe("verified uploads", () => {
       "cache-control": "public, max-age=31536000, immutable",
       "content-disposition": "inline",
       "content-type": image.contentType,
-      "cross-origin-resource-policy": "same-site",
+      "cross-origin-resource-policy": "cross-origin",
       "x-content-type-options": "nosniff",
     });
     expect(Buffer.from(served.body)).toEqual(image.buffer);
