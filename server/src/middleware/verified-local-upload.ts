@@ -52,7 +52,7 @@ export function serveVerifiedLocalUploads(uploadDirectory: string, maxFileSizeBy
         "Content-Disposition": "inline",
         "Content-Length": String(buffer.length),
         "Content-Type": image.contentType,
-        "Cross-Origin-Resource-Policy": "same-site",
+        "Cross-Origin-Resource-Policy": "cross-origin",
         "X-Content-Type-Options": "nosniff",
       });
 
