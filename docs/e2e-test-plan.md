@@ -300,6 +300,8 @@ Single-password JWT auth guards all admin routes.
 ### Selectors
 - Use `data-testid` attributes; avoid CSS class selectors
 - No mocking for E2E — tests hit the real test DB and real API
+- Build the client with `npm run build:e2e` for cross-repository E2E runs; the production build uses a different API.
+- Global setup checks that `APP_URL` can render a fixture created through `API_URL` before storing the admin token.
 
 ### File Structure
 ```
